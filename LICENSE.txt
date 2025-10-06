@@ -5,6 +5,6 @@ For individuals, hobbyists, and academic use:
     See LICENSES.AGPL-3.0.txt for full terms.
 
 For organizations, collectives, or entities (commercial or nonprofit)
-providing hosted services, community-driven forks, or donation-based funding:
+providing hosted services, community-driven forks, or donation-based funding and any entity associated with Wynntils:
     Licensed under the Server Side Public License v1.0 (SSPL-1.0).
     See LICENSES.SSPL-1.0.txt for full terms.

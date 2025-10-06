@@ -389,7 +389,7 @@ public class Render2DUtil implements TextRendererAccessor {
             float a = (1f - t) * (1f - t) * 0.35f * 0.6f;
 
             Color c = new Color(baseColor.getRed(), baseColor.getGreen(), baseColor.getBlue(),
-                    Math.min(255, Math.max(0, (int) (a * 255f))));
+                    Math.min(255, Math.max(0, (int) (a * baseColor.getAlpha()))));
 
             roundRectFilled(
                 ctx.getMatrices(),

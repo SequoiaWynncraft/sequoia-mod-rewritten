@@ -97,10 +97,14 @@ public class ModuleButton extends RelativeComponent implements SettingsAccessor,
 
         int textColor;
         if (feature instanceof ToggleFeature toggleModule) {
-            textColor = toggleModule.isActive() ? accent1.getColor() : light.getColor();
+            textColor = toggleModule.isActive() ? accent2.getColor() : light.getColor();
         } else {
             textColor = light.getColor();
         }
+        if (feature instanceof ToggleFeature toggleModule && toggleModule.isActive()) {
+            render2DUtil().drawGlow(context, 0,0, textRenderer().getWidth(toggleModule.name), textRenderer().fontHeight, new Color(accent2.getRed(), accent2.getGreen(), accent2.getBlue(), 0.4f), textRenderer().fontHeight / 2f);
+        }
+
         renderText(context, feature.name, 0, 0, textColor, true);
         context.getMatrices().pop();
 

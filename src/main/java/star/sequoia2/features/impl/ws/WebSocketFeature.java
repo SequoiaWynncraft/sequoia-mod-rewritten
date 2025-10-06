@@ -65,7 +65,7 @@ public class WebSocketFeature extends ToggleFeature {
 //                URI.create(Sequoia2.isDevelopmentEnvironment()
 //                                ? WS_DEV_URL
 //                                : WS_PROD_URL),
-                SeqClient.debugMode ? URI.create(WS_DEV_URL) : URI.create(WS_PROD_URL),
+                SeqClient.testMode ? URI.create(WS_DEV_URL) : URI.create(WS_PROD_URL),
                 Map.of(
                         "Authoworization",
                         "Bearer meowmeowAG6v92hc23LK5rqrSD279",
