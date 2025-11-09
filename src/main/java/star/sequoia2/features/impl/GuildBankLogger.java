@@ -42,7 +42,7 @@ public class GuildBankLogger extends ToggleFeature {
 
     @Subscribe
     private void onChat(PacketEvent.PacketReceiveEvent event) {
-        if (!isActive() || !(event.packet() instanceof GameMessageS2CPacket packet) || packet.overlay()) {
+        if (!(event.packet() instanceof GameMessageS2CPacket packet) || packet.overlay()) {
             return;
         }
 
@@ -67,7 +67,6 @@ public class GuildBankLogger extends ToggleFeature {
 
     @Subscribe
     private void onPlayerTick(PlayerTickEvent event) {
-        if (!isActive()) return;
         if (mc.player == null) {
             lastStateSignature = null;
             return;
