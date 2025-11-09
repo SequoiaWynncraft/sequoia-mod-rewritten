@@ -59,7 +59,9 @@ public enum WSMessageType {
 
     S_REPLY,
 
-    G_TREASURY_EMERALD_ALERT;
+    G_KEEPERS_PING,
+    G_GUILD_BANK_EVENT,
+    G_GUILD_BANK_STATE;
     public static WSMessageType fromValue(int value) {
         for (WSMessageType type : values()) {
             if (type.getValue() == value) {

@@ -8,7 +8,7 @@ import static star.sequoia2.client.types.ws.WSConstants.GSON;
 
 public class GTreasuryEmeraldAlertWSMessage extends WSMessage {
     public GTreasuryEmeraldAlertWSMessage(Data data) {
-        super(WSMessageType.G_TREASURY_EMERALD_ALERT.getValue(), GSON.toJsonTree(data));
+        super(WSMessageType.G_KEEPERS_PING.getValue(), GSON.toJsonTree(data));
     }
 
 
