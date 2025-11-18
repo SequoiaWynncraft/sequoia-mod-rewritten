@@ -315,8 +315,6 @@ public class WebSocketFeature extends ToggleFeature {
             return;
         }
 
-        if (!Models.WorldState.onWorld() && !Models.WorldState.onHousing()) return;
-
         if (reconnectPending) return;
         reconnectPending = true;
 
