@@ -4,7 +4,6 @@ import com.collarmc.pounce.Subscribe;
 import com.wynntils.core.components.Models;
 import com.wynntils.models.war.type.WarBattleInfo;
 import com.wynntils.models.war.type.WarTowerState;
-import com.wynntils.services.hades.HadesUser;
 import com.wynntils.utils.type.RangedValue;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
@@ -12,12 +11,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.entity.player.PlayerEntity;
 import star.sequoia2.client.types.ws.message.ws.GGuildWarSubmissionWSMessage;
 import star.sequoia2.events.PlayerTickEvent;
 import star.sequoia2.features.ToggleFeature;
 import star.sequoia2.features.impl.ws.WebSocketFeature;
-import star.sequoia2.utils.wynn.HadesUtils;
 
 import static star.sequoia2.client.SeqClient.mc;
 
@@ -84,6 +82,7 @@ public class GuildWarTracker extends ToggleFeature {
             playerWasDead = false;
             return;
         }
+        assert mc.player != null;
         boolean isDead = mc.player.isDead() || mc.player.getHealth() <= 0;
         if (!playerWasDead && isDead) {
             handlePlayerDeath();
@@ -192,27 +191,29 @@ public class GuildWarTracker extends ToggleFeature {
     }
 
     private List<String> collectCurrentWarrers() {
-        if (mc.player == null) return Collections.emptyList();
+        if (mc.player == null || mc.world == null) return Collections.emptyList();
 
-        Vec3d playerPos = mc.player.getPos();
         LinkedHashSet<String> uniqueNames = new LinkedHashSet<>();
         uniqueNames.add(mc.player.getGameProfile().getName());
 
-        if (HadesUtils.cachedHadesUsers != null) {
-            HadesUtils.cachedHadesUsers.values().stream()
-                    .filter(user -> !Float.isNaN(user.getX()) && !Float.isNaN(user.getZ()))
-                    .filter(user -> withinRange(playerPos, user))
-                    .map(HadesUser::getName)
-                    .forEach(uniqueNames::add);
+        for (PlayerEntity other : mc.world.getPlayers()) {
+            if (other == null || other == mc.player) continue;
+            if (!isWithinTrackingRange(other)) continue;
+
+            String name = other.getGameProfile() != null
+                    ? other.getGameProfile().getName()
+                    : other.getName().getString();
+            uniqueNames.add(name);
         }
 
         uniqueNames.removeIf(name -> name == null || name.isBlank());
         return uniqueNames.isEmpty() ? Collections.emptyList() : new ArrayList<>(uniqueNames);
     }
 
-    private boolean withinRange(Vec3d playerPos, HadesUser user) {
-        Vec3d other = new Vec3d(user.getX(), user.getY(), user.getZ());
-        return playerPos.squaredDistanceTo(other) <= TRACKING_RADIUS_SQ;
+    private boolean isWithinTrackingRange(PlayerEntity other) {
+        if (other == null) return false;
+        assert mc.player != null;
+        return mc.player.squaredDistanceTo(other) <= TRACKING_RADIUS_SQ;
     }
 
     private int hashState(WarTowerState state) {
