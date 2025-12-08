@@ -151,9 +151,6 @@ public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserA
             return;
         }
 
-        if(raw.contains("TEST")) {
-            expectGuStats = true;
-        }
 
         StyledText styledText = StyledText.fromComponent(content);
         String tex = teXParser().toTeX(styledText.stripAlignment());
