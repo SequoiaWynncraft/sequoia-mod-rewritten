@@ -181,7 +181,6 @@ public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserA
 
     @Override
     protected void onActivate() {
-        // no-op; kept for symmetry
     }
 
     private record PendingRaid(StyledText message, long xpPerRaid, long createdAtMs) {}
