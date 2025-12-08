@@ -10,6 +10,7 @@ import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 import star.sequoia2.accessors.EventBusAccessor;
 import star.sequoia2.accessors.TeXParserAccessor;
+import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.types.text.StyledText;
 import star.sequoia2.events.PacketEvent;
 import star.sequoia2.features.ToggleFeature;
@@ -25,17 +26,21 @@ import static star.sequoia2.features.impl.ws.ChatHookFeature.remove_multiline;
 
 
 public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserAccessor, EventBusAccessor {
-    public static volatile Long current = 0L;
-    public static volatile Long needed = 0L;
+    private volatile long current = 0L;
+    private volatile long needed = 0L;
 
-    public static final BlockingQueue<star.sequoia2.client.types.text.StyledText> raidMessageQueue = new LinkedBlockingQueue<>();
-    private static CompletableFuture<Void> raidWorker = null;
+    private final BlockingQueue<star.sequoia2.client.types.text.StyledText> raidMessageQueue = new LinkedBlockingQueue<>();
+    private final Object statsLock = new Object();
+    private CompletableFuture<Void> raidWorker = null;
 
     private boolean suppressNextGuStats = false;
     private boolean expectGuStats = false;
+    private long statsRequestAtMs = 0L;
 
     private static final Pattern GUILD_RAID_BLOCK = Pattern.compile("§b finished");
     private static final Pattern OTHER_GUILD_RAID_BLOCK = Pattern.compile("§b §bfinished");
+    private static final Pattern XP_PATTERN = Pattern.compile(".*Needed XP:.*?(\\d+).*?/(\\d+).*");
+    private static final long STATS_TIMEOUT_MS = 15000L;
 
     private static final Pattern SECTION_CODES =
             Pattern.compile("§[0-9a-fk-or<>]", Pattern.CASE_INSENSITIVE);
@@ -52,22 +57,17 @@ public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserA
         return (int) Math.ceil((double) missing / xpPerRaid);
     }
 
-    public static void startRaidWorker() {
+    private void startRaidWorker() {
         if (raidWorker != null && !raidWorker.isDone()) return;
 
         raidWorker = CompletableFuture.runAsync(() -> {
             try {
                 while (!raidMessageQueue.isEmpty()) {
                     StyledText message = raidMessageQueue.take();
-                    System.out.println(message);
-                    long start = System.currentTimeMillis();
-
-                    while (GRaidsUntilLvlUpFeature.needed == 0L) {
-                        Thread.sleep(100);
-
-                        if (System.currentTimeMillis() - start > 15000) {
-                            break;
-                        }
+                    boolean statsReady = waitForStats();
+                    if (!statsReady) {
+                        SeqClient.debug("Timed out waiting for guild stats after raid completion");
+                        continue;
                     }
 
                     String plain = SECTION_CODES.matcher(message.getString()).replaceAll("");
@@ -90,13 +90,25 @@ public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserA
 
                     MinecraftClient.getInstance().execute(() -> {
                         MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(out.getComponent());
-                        GRaidsUntilLvlUpFeature.current = 0L;
-                        GRaidsUntilLvlUpFeature.needed = 0L;
+                        GRaidsUntilLvlUpFeature.this.current = 0L;
+                        GRaidsUntilLvlUpFeature.this.needed = 0L;
                     });
                 }
 
             } catch (InterruptedException ignored) { }
-        });
+        }, SeqClient.SCHEDULER);
+    }
+
+    private boolean waitForStats() throws InterruptedException {
+        long deadline = System.currentTimeMillis() + STATS_TIMEOUT_MS;
+        synchronized (statsLock) {
+            while (needed == 0L && System.currentTimeMillis() < deadline) {
+                long remaining = deadline - System.currentTimeMillis();
+                if (remaining <= 0) break;
+                statsLock.wait(remaining);
+            }
+            return needed != 0L;
+        }
     }
 
     public static boolean isGuStatsHeader(Text text) {
@@ -118,32 +130,40 @@ public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserA
         }
 
         String raw = content.getString();
-        System.out.println("raw: " + raw + " content: " + content + " " + raw.isEmpty());
+        if (expectGuStats && statsRequestAtMs > 0 && System.currentTimeMillis() - statsRequestAtMs > STATS_TIMEOUT_MS) {
+            SeqClient.debug("Timed out waiting for gu stats response; resetting state");
+            expectGuStats = false;
+            suppressNextGuStats = false;
+            statsRequestAtMs = 0L;
+            current = 0L;
+            needed = 0L;
+            signalStatsReady();
+        }
+
         if(expectGuStats && (raw.isBlank() || content.toString().equals("empty"))) {
-            System.out.println(event);
             event.cancel();
             return;
         }
         if(expectGuStats && GRaidsUntilLvlUpFeature.isGuStatsHeader(content)) {
             suppressNextGuStats = true;
             expectGuStats = false;
+            statsRequestAtMs = 0L;
         }
         if (suppressNextGuStats) {
             if(raw.contains("Total Members:")) {
                 suppressNextGuStats = false;
             }
 
-            Pattern xpPattern = Pattern.compile(".*Needed XP:.*?(\\d+).*?/(\\d+).*");
-            Matcher m = xpPattern.matcher(raw);
+            Matcher m = XP_PATTERN.matcher(raw);
 
             if (m.matches()) {
                 String currentXp = m.group(1);
                 String requiredXp = m.group(2);
-                System.out.println("Parsed XP: " + currentXp + "/" + requiredXp);
 
                 try {
-                    GRaidsUntilLvlUpFeature.current = Long.parseLong(currentXp);
-                    GRaidsUntilLvlUpFeature.needed = Long.parseLong(requiredXp);
+                    current = Long.parseLong(currentXp);
+                    needed = Long.parseLong(requiredXp);
+                    signalStatsReady();
                 } catch (Exception ignored) {}
             }
 
@@ -161,10 +181,40 @@ public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserA
             if(MinecraftClient.getInstance().getNetworkHandler() == null) return;
             MinecraftClient.getInstance().getNetworkHandler().sendChatCommand("gu stats");
             expectGuStats = true;
+            statsRequestAtMs = System.currentTimeMillis();
             event.cancel();
 
-            GRaidsUntilLvlUpFeature.raidMessageQueue.add(styledText);
-            GRaidsUntilLvlUpFeature.startRaidWorker();
+            raidMessageQueue.add(styledText);
+            startRaidWorker();
+        }
+    }
+
+    private void signalStatsReady() {
+        synchronized (statsLock) {
+            statsLock.notifyAll();
+        }
+    }
+
+    @Override
+    protected void onDeactivate() {
+        suppressNextGuStats = false;
+        expectGuStats = false;
+        statsRequestAtMs = 0L;
+        current = 0L;
+        needed = 0L;
+        raidMessageQueue.clear();
+        signalStatsReady();
+        if (raidWorker != null && !raidWorker.isDone()) {
+            raidWorker.cancel(true);
+            raidWorker = null;
+        }
+    }
+
+    @Override
+    protected void onActivate() {
+        // ensure worker can start fresh on toggle-on
+        if (raidWorker != null && raidWorker.isDone()) {
+            raidWorker = null;
         }
     }
 }
