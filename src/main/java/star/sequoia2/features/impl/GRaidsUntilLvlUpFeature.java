@@ -6,10 +6,10 @@ import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
 import net.minecraft.text.PlainTextContent;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 import star.sequoia2.accessors.EventBusAccessor;
 import star.sequoia2.accessors.TeXParserAccessor;
-import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.types.text.StyledText;
 import star.sequoia2.events.PacketEvent;
@@ -77,9 +77,10 @@ public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserA
             expectGuStats = false;
             suppressNextGuStats = false;
             statsRequestAtMs = 0L;
-            current = 0L;
-            needed = 0L;
-            signalStatsReady();
+            PendingRaid dropped = pendingRaids.pollFirst();
+            if (dropped != null) {
+                SeqClient.debug("Dropping pending raid after stats timeout");
+            }
         }
 
         if(expectGuStats && (raw.isBlank() || content.toString().equals("empty"))) {
@@ -179,10 +180,5 @@ public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserA
         pendingRaids.clear();
     }
 
-    @Override
-    protected void onActivate() {
-    }
-
     private record PendingRaid(StyledText message, long xpPerRaid, long createdAtMs) {}
-}
 }
