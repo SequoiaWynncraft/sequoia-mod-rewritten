@@ -122,8 +122,8 @@ public class GuildRaidParser implements FeaturesAccessor, EventBusAccessor {
         }
     }
 
-    private static String matchGroup(Pattern p, String s) { return matchGroup(p, s, 1); }
-    private static String matchGroup(Pattern p, String s, int group) {
+    public static String matchGroup(Pattern p, String s) { return matchGroup(p, s, 1); }
+    public static String matchGroup(Pattern p, String s, int group) {
         Matcher m = p.matcher(s);
         return m.find() ? m.group(group) : null;
     }
@@ -162,7 +162,7 @@ public class GuildRaidParser implements FeaturesAccessor, EventBusAccessor {
         try { return Long.parseLong(n); } catch (NumberFormatException e) { return def; }
     }
 
-    private static long parseScaled(String n, String suffix) {
+    public static long parseScaled(String n, String suffix) {
         long base = parseLong(n, 0);
         if (suffix == null || suffix.isEmpty()) return base;
         return switch (Character.toLowerCase(suffix.charAt(0))) {
