@@ -1,7 +1,7 @@
 package star.sequoia2.features.impl;
 
+import static star.sequoia2.client.SeqClient.mc;
 import com.collarmc.pounce.Subscribe;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
 import net.minecraft.text.PlainTextContent;
 import net.minecraft.text.Style;
@@ -88,8 +88,8 @@ public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserA
 
                     star.sequoia2.client.types.text.StyledText out = message.append((needed == 0L ? "" : "§3. §b" + GRaidsUntilLvlUpFeature.calculateNeededRaids(current, needed, xp) + " guild raids left to level up."));
 
-                    MinecraftClient.getInstance().execute(() -> {
-                        MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(out.getComponent());
+                    mc.execute(() -> {
+                        mc.inGameHud.getChatHud().addMessage(out.getComponent());
                         GRaidsUntilLvlUpFeature.this.current = 0L;
                         GRaidsUntilLvlUpFeature.this.needed = 0L;
                     });
@@ -125,9 +125,6 @@ public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserA
     public void onChatMessage(PacketEvent.PacketReceiveEvent event) {
         if (!(event.packet() instanceof GameMessageS2CPacket(Text content, boolean overlay))) return;
         if (content == null || overlay) return;
-        if(!features().getIfActive(GRaidsUntilLvlUpFeature.class).map(GRaidsUntilLvlUpFeature::isActive).orElse(false)) {
-            return;
-        }
 
         String raw = content.getString();
         if (expectGuStats && statsRequestAtMs > 0 && System.currentTimeMillis() - statsRequestAtMs > STATS_TIMEOUT_MS) {
@@ -178,8 +175,8 @@ public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserA
         tex = remove_multiline(tex);
 
         if (GUILD_RAID_BLOCK.matcher(tex).find() || OTHER_GUILD_RAID_BLOCK.matcher(tex).find()) {
-            if(MinecraftClient.getInstance().getNetworkHandler() == null) return;
-            MinecraftClient.getInstance().getNetworkHandler().sendChatCommand("gu stats");
+            if(mc.getNetworkHandler() == null) return;
+            mc.getNetworkHandler().sendChatCommand("gu stats");
             expectGuStats = true;
             statsRequestAtMs = System.currentTimeMillis();
             event.cancel();
