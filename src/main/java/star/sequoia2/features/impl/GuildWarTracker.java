@@ -82,7 +82,10 @@ public class GuildWarTracker extends ToggleFeature {
             playerWasDead = false;
             return;
         }
-        assert mc.player != null;
+        if (mc.player == null) {
+            playerWasDead = false;
+            return;
+        }
         boolean isDead = mc.player.isDead() || mc.player.getHealth() <= 0;
         if (!playerWasDead && isDead) {
             handlePlayerDeath();
@@ -212,8 +215,7 @@ public class GuildWarTracker extends ToggleFeature {
 
     private boolean isWithinTrackingRange(PlayerEntity other) {
         if (other == null) return false;
-        assert mc.player != null;
-        return mc.player.squaredDistanceTo(other) <= TRACKING_RADIUS_SQ;
+        return mc.player != null && mc.player.squaredDistanceTo(other) <= TRACKING_RADIUS_SQ;
     }
 
     private int hashState(WarTowerState state) {
