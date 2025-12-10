@@ -38,6 +38,13 @@ import static star.sequoia2.client.SeqClient.mc;
  * Automates giving guild rewards (aspects/tomes/emeralds) from the guild member list.
  */
 public class GuildRewardGranter extends ToggleFeature {
+
+    // Settings
+    private final IntSetting pageDelayMs = settings().number("PageDelayMs", "Delay between page turns when scanning", 350, 50, 2000);
+    private final IntSetting clickDelayMs = settings().number("ClickDelayMs", "Delay between number-key clicks", 100, 25, 1000);
+    private final BooleanSetting autoScrollEnabled = settings().bool("AutoScroll", "Auto-scroll to unique search match", true);
+
+
     private static final int SLOT_NEXT = 28;
     private static final int SLOT_PREV = 10;
     private static final ContainerBounds MEMBER_BOUNDS = new GuildMemberListContainer().getBounds();
@@ -46,11 +53,6 @@ public class GuildRewardGranter extends ToggleFeature {
     private static final int HOTBAR_EMS = 3;
     private static final String DUMP_TARGET = "cinfrascitizen";
     private static final long AUTO_SCROLL_COOLDOWN_MS = 800;
-
-    // Settings
-    private final IntSetting pageDelayMs = settings().number("PageDelayMs", "Delay between page turns when scanning", 350, 50, 2000);
-    private final IntSetting clickDelayMs = settings().number("ClickDelayMs", "Delay between number-key clicks", 100, 25, 1000);
-    private final BooleanSetting autoScrollEnabled = settings().bool("AutoScroll", "Auto-scroll to unique search match", true);
 
     // State
     private final Map<String, Integer> nameToSlot = new ConcurrentHashMap<>();
