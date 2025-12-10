@@ -36,7 +36,7 @@ public class WebSocketFeature extends ToggleFeature {
     public BooleanSetting connectOnJoin = settings().bool("ConnectOnJoin", "Auto connect when joining", true);
 
     private static final String WS_DEV_URL = "ws://66.78.40.43:8085/ws";
-    private static final String WS_PROD_URL = "wss://api.sequoia.ooo/ws";
+    private static final String WS_PROD_URL = "wss://api.seqwawa.com/ws";
 
     @Getter
     private WebSocketClient client;

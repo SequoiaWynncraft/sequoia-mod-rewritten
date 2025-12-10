@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
 import net.minecraft.component.DataComponentTypes;
@@ -136,39 +137,6 @@ public class GuildRewardGranter extends ToggleFeature {
                 && Models.Container.getCurrentContainer() instanceof GuildMemberListContainer
                 && !scanning) {
             scanAllPagesAsync();
-        }
-    }
-
-    @Subscribe
-    public void onMouse(MouseButtonEvent event) {
-        if (event.action() != 1) return;
-        if (!(mc.currentScreen instanceof GenericContainerScreen screen)) return;
-        if (!(Models.Container.getCurrentContainer() instanceof GuildMemberListContainer)) return;
-        double scale = mc.getWindow().getScaleFactor();
-        double mx = mc.mouse.getX() / scale;
-        double my = mc.mouse.getY() / scale;
-        SimpleButton simpleButton = giveAspectBtn;
-        if (simpleButton != null && simpleButton.contains(mx, my)) {
-            giveAspectBtn.onClick().run();
-            event.cancel();
-            return;
-        }
-        SimpleButton simpleButton2 = giveTomeBtn;
-        if (simpleButton2 != null && simpleButton2.contains(mx, my)) {
-            giveTomeBtn.onClick().run();
-            event.cancel();
-            return;
-        }
-        SimpleButton simpleButton3 = giveEmsBtn;
-        if (simpleButton3 != null && simpleButton3.contains(mx, my)) {
-            giveEmsBtn.onClick().run();
-            event.cancel();
-            return;
-        }
-        SimpleButton simpleButton4 = dumpEmsBtn;
-        if (simpleButton4 != null && simpleButton4.contains(mx, my)) {
-            dumpEmsBtn.onClick().run();
-            event.cancel();
         }
     }
 
@@ -531,6 +499,66 @@ public class GuildRewardGranter extends ToggleFeature {
         });
     }
 
+    private void blurSearchWidget() {
+        try {
+            ContainerSearchFeature searchFeature = Managers.Feature.getFeatureInstance(ContainerSearchFeature.class);
+            Field lastSearchWidget = ContainerSearchFeature.class.getDeclaredField("lastSearchWidget");
+            lastSearchWidget.setAccessible(true);
+            Object widget = lastSearchWidget.get(searchFeature);
+            if (widget == null) return;
+
+            Method getText = findMethod(widget.getClass(), "getTextBoxInput");
+            Method setText = findMethod(widget.getClass(), "setTextBoxInput", String.class);
+            String saved = getText != null
+                    ? Optional.ofNullable(getText.invoke(widget)).map(Object::toString).orElse("")
+                    : "";
+
+            Object screen = mc.currentScreen;
+            if (screen != null) {
+                Method setFocusedTextInput = findMethod(screen.getClass(), "setFocusedTextInput", widget.getClass());
+                if (setFocusedTextInput == null) {
+                    for (Method m : screen.getClass().getMethods()) {
+                        if (m.getName().equals("setFocusedTextInput") && m.getParameterCount() == 1) {
+                            setFocusedTextInput = m;
+                            break;
+                        }
+                    }
+                }
+                if (setFocusedTextInput != null) {
+                    setFocusedTextInput.setAccessible(true);
+                    setFocusedTextInput.invoke(screen, new Object[]{null});
+                }
+                if (screen instanceof net.minecraft.client.gui.screen.Screen s) {
+                    s.setFocused(null);
+                } else {
+                    Method setFocused = findMethod(screen.getClass(), "setFocused", Element.class);
+                    if (setFocused != null) {
+                        setFocused.setAccessible(true);
+                        setFocused.invoke(screen, new Object[]{null});
+                    }
+                }
+            }
+
+            if (setText != null && StringUtils.isNotBlank(saved)) {
+                setText.setAccessible(true);
+                setText.invoke(widget, saved);
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private Method findMethod(Class<?> cls, String name, Class<?>... params) {
+        Class<?> cur = cls;
+        while (cur != null) {
+            try {
+                return cur.getDeclaredMethod(name, params);
+            } catch (NoSuchMethodException ignored) {
+            }
+            cur = cur.getSuperclass();
+        }
+        return null;
+    }
+
     private static String labelForHotbar(int key) {
         return switch (key) {
             case 1 -> "Aspect";
@@ -538,6 +566,20 @@ public class GuildRewardGranter extends ToggleFeature {
             case 3 -> "Ems";
             default -> "Reward";
         };
+    }
+
+    @Subscribe
+    public void onMouse(MouseButtonEvent event) {
+        if (event.action() != 1) return;
+        if (!(mc.currentScreen instanceof GenericContainerScreen screen)) return;
+        if (!(Models.Container.getCurrentContainer() instanceof GuildMemberListContainer)) return;
+        double scale = mc.getWindow().getScaleFactor();
+        double mx = mc.mouse.getX() / scale;
+        double my = mc.mouse.getY() / scale;
+        if (giveAspectBtn != null && giveAspectBtn.contains(mx, my)) { giveAspectBtn.onClick().run(); event.cancel(); blurSearchWidget(); return; }
+        if (giveTomeBtn != null && giveTomeBtn.contains(mx, my))   { giveTomeBtn.onClick().run(); event.cancel(); blurSearchWidget(); return; }
+        if (giveEmsBtn != null && giveEmsBtn.contains(mx, my))    { giveEmsBtn.onClick().run(); event.cancel(); blurSearchWidget(); return; }
+        if (dumpEmsBtn != null && dumpEmsBtn.contains(mx, my))    { dumpEmsBtn.onClick().run(); event.cancel(); blurSearchWidget(); }
     }
 
     public record SimpleButton(int x, int y, int width, int height, Text label, Runnable onClick) {
