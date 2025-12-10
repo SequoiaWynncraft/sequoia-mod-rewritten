@@ -282,11 +282,16 @@ public class WebSocketFeature extends ToggleFeature {
             return;
         }
 
-        if (!isFirstConnection) {
-            isFirstConnection = true;
-            client.connect();
-        } else {
-            client.reconnect();
+        try {
+            if (!isFirstConnection) {
+                isFirstConnection = true;
+                client.connect();
+            } else {
+                client.reconnect();
+            }
+        } catch (Exception e) {
+            SeqClient.error("WebSocket connection attempt failed", e);
+            tryReconnect(true);
         }
     }
 
@@ -325,7 +330,13 @@ public class WebSocketFeature extends ToggleFeature {
 
             if (client == null) initClient();        // create it lazily
 
-            if (!client.isOpen()) client.reconnect();
+            if (!client.isOpen()) {
+                try {
+                    client.reconnect();
+                } catch (Exception e) {
+                    SeqClient.error("WebSocket reconnect attempt failed", e);
+                }
+            }
         }), 10, TimeUnit.SECONDS);
 
     }

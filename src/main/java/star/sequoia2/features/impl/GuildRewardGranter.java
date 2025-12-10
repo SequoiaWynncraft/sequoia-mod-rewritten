@@ -15,11 +15,13 @@ import net.minecraft.item.Items;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.Text;
+import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
 import org.apache.commons.lang3.StringUtils;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.events.Render2DEvent;
 import star.sequoia2.events.ScreenOpenedEvent;
 import star.sequoia2.events.input.MouseButtonEvent;
+import star.sequoia2.events.PacketEvent;
 import star.sequoia2.features.ToggleFeature;
 import star.sequoia2.settings.types.BooleanSetting;
 import star.sequoia2.settings.types.IntSetting;
@@ -62,8 +64,10 @@ public class GuildRewardGranter extends ToggleFeature {
     private boolean scanning = false;
     private String lastSearchQuery = "";
     private long lastAutoScrollMs = 0L;
+    private volatile boolean stopDumpDueToNoEms = false;
     private boolean inMembersScreen = false;
     private String pendingAutoScroll = "";
+    private boolean initialScanInProgress = false;
     private boolean initialScanDone = false;
     private SimpleButton giveAspectBtn;
     private SimpleButton giveTomeBtn;
@@ -86,8 +90,10 @@ public class GuildRewardGranter extends ToggleFeature {
         scanning = false;
         lastSearchQuery = "";
         lastAutoScrollMs = 0L;
+        stopDumpDueToNoEms = false;
         inMembersScreen = false;
         pendingAutoScroll = "";
+        initialScanInProgress = false;
         initialScanDone = false;
     }
 
@@ -99,7 +105,9 @@ public class GuildRewardGranter extends ToggleFeature {
         inMembersScreen = false;
         lastSearchQuery = "";
         lastAutoScrollMs = 0L;
+        stopDumpDueToNoEms = false;
         pendingAutoScroll = "";
+        initialScanInProgress = false;
         initialScanDone = false;
     }
 
@@ -113,15 +121,20 @@ public class GuildRewardGranter extends ToggleFeature {
                 nameToPage.clear();
                 lastSearchQuery = "";
                 lastAutoScrollMs = 0L;
+                stopDumpDueToNoEms = false;
                 pendingAutoScroll = "";
+                initialScanInProgress = false;
                 initialScanDone = false;
             }
             return;
         }
         inMembersScreen = true;
+        if (initialScanInProgress) {
+            blurSearchWidget();
+        }
         ensureButtons(screen, event.context());
         if (!initialScanDone && !scanning && pageHasHeads(screen)) {
-            initialScanDone = true;
+            initialScanInProgress = true;
             scanAllPagesAsync();
         }
         maybeAutoNavigateSearch();
@@ -132,6 +145,9 @@ public class GuildRewardGranter extends ToggleFeature {
         if (event.screen() instanceof GenericContainerScreen
                 && Models.Container.getCurrentContainer() instanceof GuildMemberListContainer
                 && !scanning) {
+            if (!initialScanDone) {
+                initialScanInProgress = true;
+            }
             scanAllPagesAsync();
         }
     }
@@ -174,6 +190,9 @@ public class GuildRewardGranter extends ToggleFeature {
     private void giveToName(String target, int hotbarKey) {
         if (!isActive()) return;
         String normalizedTarget = normalizeName(target);
+        if (hotbarKey == HOTBAR_EMS) {
+            stopDumpDueToNoEms = false;
+        }
         sendStatus("Attempting to give " + labelForHotbar(hotbarKey) + " to " + target);
         SeqClient.SCHEDULER.execute(() -> {
             int clicks;
@@ -201,6 +220,7 @@ public class GuildRewardGranter extends ToggleFeature {
     private CompletableFuture<Void> scanAllPagesAsync() {
         if (!(mc.currentScreen instanceof GenericContainerScreen screen)) {
             sendStatus("Not in guild members screen");
+            initialScanInProgress = false;
             return CompletableFuture.completedFuture(null);
         }
         if (scanning) {
@@ -214,6 +234,10 @@ public class GuildRewardGranter extends ToggleFeature {
         CompletableFuture<Integer> forward = scanForward(screen, 0);
         return forward.thenComposeAsync(pages -> rewindToFirst(screen).thenApply(v -> pages), SeqClient.SCHEDULER).handle((pages, ex) -> {
             scanning = false;
+            if (initialScanInProgress) {
+                initialScanInProgress = false;
+                initialScanDone = true;
+            }
             if (ex != null) {
                 SeqClient.error("GuildRewardGranter scan failed", ex);
                 sendStatus("Scan failed: " + ex.getMessage());
@@ -322,11 +346,20 @@ public class GuildRewardGranter extends ToggleFeature {
         CompletableFuture<Void> chain = CompletableFuture.completedFuture(null);
         for (int i = 0; i < times; i++) {
             chain = chain.thenRunAsync(() -> {
-                assert mc.interactionManager != null;
-                mc.interactionManager.clickSlot(screen.getScreenHandler().syncId, slotIdx, hotbarKey - 1, SlotActionType.SWAP, mc.player);
+                if (hotbarKey == HOTBAR_EMS && stopDumpDueToNoEms) {
+                    return;
+                }
+                if (mc.interactionManager != null) {
+                    mc.interactionManager.clickSlot(screen.getScreenHandler().syncId, slotIdx, hotbarKey - 1, SlotActionType.SWAP, mc.player);
+                }
             }, SeqClient.SCHEDULER);
             if (i < times - 1) {
-                chain = chain.thenComposeAsync(v -> delay(clickDelayMs.get()), SeqClient.SCHEDULER);
+                chain = chain.thenComposeAsync(v -> {
+                    if (hotbarKey == HOTBAR_EMS && stopDumpDueToNoEms) {
+                        return CompletableFuture.completedFuture(null);
+                    }
+                    return delay(clickDelayMs.get());
+                }, SeqClient.SCHEDULER);
             }
         }
         return chain;
@@ -343,8 +376,9 @@ public class GuildRewardGranter extends ToggleFeature {
         if (slot == null || !slot.hasStack()) {
             return false;
         }
-        assert mc.interactionManager != null;
-        mc.interactionManager.clickSlot(screen.getScreenHandler().syncId, slotIdx, 0, SlotActionType.PICKUP, mc.player);
+        if (mc.interactionManager != null) {
+            mc.interactionManager.clickSlot(screen.getScreenHandler().syncId, slotIdx, 0, SlotActionType.PICKUP, mc.player);
+        }
         return true;
     }
 
@@ -363,6 +397,16 @@ public class GuildRewardGranter extends ToggleFeature {
         } catch (Exception e) {
             SeqClient.warn("Failed to read search text via reflection", e);
             return Optional.empty();
+        }
+    }
+
+    @Subscribe
+    public void onChat(PacketEvent.PacketReceiveEvent event) {
+        if (!(event.packet() instanceof GameMessageS2CPacket(Text content, boolean overlay))) return;
+        if (overlay || content == null) return;
+        String msg = content.getString();
+        if (msg.contains("Your guild does not have enough Emeralds to send a reward")) {
+            stopDumpDueToNoEms = true;
         }
     }
 
