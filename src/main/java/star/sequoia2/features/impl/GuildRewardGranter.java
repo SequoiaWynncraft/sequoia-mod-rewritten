@@ -6,17 +6,8 @@ import com.wynntils.core.components.Models;
 import com.wynntils.features.inventory.ContainerSearchFeature;
 import com.wynntils.models.containers.containers.GuildMemberListContainer;
 import com.wynntils.models.containers.type.ContainerBounds;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ProfileComponent;
@@ -32,6 +23,15 @@ import star.sequoia2.events.input.MouseButtonEvent;
 import star.sequoia2.features.ToggleFeature;
 import star.sequoia2.settings.types.BooleanSetting;
 import star.sequoia2.settings.types.IntSetting;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import static star.sequoia2.client.SeqClient.mc;
 
@@ -146,18 +146,10 @@ public class GuildRewardGranter extends ToggleFeature {
         int h = 16;
         int gap = 4;
         if (giveAspectBtn == null) {
-            giveAspectBtn = new SimpleButton(baseX, baseY, w, h, Text.literal("Give Aspect"), () -> {
-                giveToSearch(HOTBAR_ASPECT);
-            });
-            giveTomeBtn = new SimpleButton(baseX, baseY + 16 + 4, w, h, Text.literal("Give Tome"), () -> {
-                giveToSearch(HOTBAR_TOME);
-            });
-            giveEmsBtn = new SimpleButton(baseX, baseY + (2 * (16 + 4)), w, h, Text.literal("Give Ems"), () -> {
-                giveToSearch(HOTBAR_EMS);
-            });
-            dumpEmsBtn = new SimpleButton(baseX, baseY + (3 * (16 + 4)), w, h, Text.literal("Dump Ems"), () -> {
-                giveToName(DUMP_TARGET, HOTBAR_EMS);
-            });
+            giveAspectBtn = new SimpleButton(baseX, baseY, w, h, Text.literal("Give Aspect"), searchClick(HOTBAR_ASPECT));
+            giveTomeBtn = new SimpleButton(baseX, baseY + 16 + 4, w, h, Text.literal("Give Tome"), searchClick(HOTBAR_TOME));
+            giveEmsBtn = new SimpleButton(baseX, baseY + (2 * (16 + 4)), w, h, Text.literal("Give Ems"), searchClick(HOTBAR_EMS));
+            dumpEmsBtn = new SimpleButton(baseX, baseY + (3 * (16 + 4)), w, h, Text.literal("Dump Ems"), () -> giveToName(DUMP_TARGET, HOTBAR_EMS));
         }
         double scale = mc.getWindow().getScaleFactor();
         double mx = mc.mouse.getX() / scale;
@@ -168,13 +160,15 @@ public class GuildRewardGranter extends ToggleFeature {
         renderButton(ctx, dumpEmsBtn, mx, my);
     }
 
-    private void giveToSearch(int hotbarKey) {
-        String search = normalizeName(readSearchText().orElse(""));
-        if (search.isEmpty()) {
-            notify(Text.literal("Type a player name in the search bar first"), "guildrewardgranter-no-search");
-            return;
-        }
-        giveToName(search, hotbarKey);
+    private Runnable searchClick(int hotbarKey) {
+        return () -> {
+            String search = normalizeName(readSearchText().orElse(""));
+            if (search.isEmpty()) {
+                notify(Text.literal("Type a player name in the search bar first"), "guildrewardgranter-no-search");
+                return;
+            }
+            giveToName(search, hotbarKey);
+        };
     }
 
     private void giveToName(String target, int hotbarKey) {
@@ -254,13 +248,11 @@ public class GuildRewardGranter extends ToggleFeature {
     }
 
     private void readMembersOnPage(GenericContainerScreen screen) {
-        Iterator<Integer> it = MEMBER_BOUNDS.getSlots().iterator();
-        while (it.hasNext()) {
-            int slotIdx = it.next();
+        for (int slotIdx : MEMBER_BOUNDS.getSlots()) {
             Slot slot = screen.getScreenHandler().getSlot(slotIdx);
             if (slot != null && slot.hasStack() && slot.getStack().getItem() == Items.PLAYER_HEAD) {
                 Optional<String> nameOpt = extractHeadName(slot);
-                if (!nameOpt.isEmpty()) {
+                if (nameOpt.isPresent()) {
                     String name = nameOpt.get();
                     nameToSlot.put(name, slotIdx);
                     nameToPage.put(name, currentPage);
@@ -274,13 +266,11 @@ public class GuildRewardGranter extends ToggleFeature {
             return false;
         }
         String key = normalizeName(targetName);
-        Iterator<Integer> it = MEMBER_BOUNDS.getSlots().iterator();
-        while (it.hasNext()) {
-            int slotIdx = it.next();
+        for (int slotIdx : MEMBER_BOUNDS.getSlots()) {
             Slot slot = screen.getScreenHandler().getSlot(slotIdx);
             if (slot != null && slot.hasStack() && slot.getStack().getItem() == Items.PLAYER_HEAD) {
                 Optional<String> nameOpt = extractHeadName(slot);
-                if (!nameOpt.isEmpty() && nameOpt.get().equals(key)) {
+                if (nameOpt.isPresent() && nameOpt.get().equals(key)) {
                     performClicksAsync(screen, slotIdx, hotbarKey, times);
                     return true;
                 }
@@ -306,9 +296,7 @@ public class GuildRewardGranter extends ToggleFeature {
                 return CompletableFuture.completedFuture(false);
             }
             Slot s = screen.getScreenHandler().getSlot(slot);
-            return s == null ? CompletableFuture.completedFuture(false) : performClicksAsync(screen, slot, hotbarKey, times).thenApply(v -> {
-                return true;
-            });
+            return s == null ? CompletableFuture.completedFuture(false) : performClicksAsync(screen, slot, hotbarKey, times).thenApply(v -> true);
         }, SeqClient.SCHEDULER);
     }
 
@@ -334,6 +322,7 @@ public class GuildRewardGranter extends ToggleFeature {
         CompletableFuture<Void> chain = CompletableFuture.completedFuture(null);
         for (int i = 0; i < times; i++) {
             chain = chain.thenRunAsync(() -> {
+                assert mc.interactionManager != null;
                 mc.interactionManager.clickSlot(screen.getScreenHandler().syncId, slotIdx, hotbarKey - 1, SlotActionType.SWAP, mc.player);
             }, SeqClient.SCHEDULER);
             if (i < times - 1) {
@@ -354,6 +343,7 @@ public class GuildRewardGranter extends ToggleFeature {
         if (slot == null || !slot.hasStack()) {
             return false;
         }
+        assert mc.interactionManager != null;
         mc.interactionManager.clickSlot(screen.getScreenHandler().syncId, slotIdx, 0, SlotActionType.PICKUP, mc.player);
         return true;
     }
@@ -369,7 +359,7 @@ public class GuildRewardGranter extends ToggleFeature {
             }
             Method getText = widget.getClass().getMethod("getTextBoxInput", new Class[0]);
             Object res = getText.invoke(widget, new Object[0]);
-            return Optional.ofNullable(res).map(v0 -> v0.toString());
+            return Optional.ofNullable(res).map(Object::toString);
         } catch (Exception e) {
             SeqClient.warn("Failed to read search text via reflection", e);
             return Optional.empty();
@@ -488,9 +478,7 @@ public class GuildRewardGranter extends ToggleFeature {
     }
 
     private void sendStatus(String msg) {
-        mc.execute(() -> {
-            mc.getMessageHandler().onGameMessage(SeqClient.prefix(Text.literal(msg)), false);
-        });
+        mc.execute(() -> mc.getMessageHandler().onGameMessage(SeqClient.prefix(Text.literal(msg)), false));
     }
 
     private void blurSearchWidget() {
