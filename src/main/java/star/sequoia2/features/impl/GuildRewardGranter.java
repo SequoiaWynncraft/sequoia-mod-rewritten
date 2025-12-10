@@ -501,7 +501,6 @@ public class GuildRewardGranter extends ToggleFeature {
         };
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
     public record SimpleButton(int x, int y, int width, int height, Text label, Runnable onClick) {
         boolean contains(double mx, double my) {
             return mx >= x && mx <= x + width && my >= y && my <= y + height;
