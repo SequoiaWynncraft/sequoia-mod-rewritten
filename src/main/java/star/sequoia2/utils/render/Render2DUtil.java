@@ -33,7 +33,6 @@ public class Render2DUtil implements TextRendererAccessor {
     private float fovMultiplier = 1.0F;
     private final Matrix4f cachedViewMatrix = new Matrix4f();
     private final Matrix4f cachedProjectionMatrix = new Matrix4f();
-    private long cachedCameraFrame = -1;
 
     public Vector2f worldToScreen(Vector3f worldPos, Matrix4f viewMatrix, Matrix4f projectionMatrix, int screenWidth, int screenHeight, boolean allowBehind) {
         Vector4f clipSpacePos = new Vector4f(worldPos, 1.0f);

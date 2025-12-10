@@ -55,7 +55,7 @@ public class TeleportIndicator extends ToggleFeature implements RenderUtilAccess
         }
     }
     @Subscribe
-    public void onWynncraftJoin(WynncraftLoginEvent event){
+    public void onWynncraftJoin(WynncraftLoginEvent ignored){
         TickScheduler.scheduleTicks(() -> {
             currentClass = Class.Else;
             max = -1;

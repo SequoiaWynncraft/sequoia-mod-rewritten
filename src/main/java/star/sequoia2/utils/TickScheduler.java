@@ -3,6 +3,7 @@ package star.sequoia2.utils;
 import com.collarmc.pounce.EventBus;
 import com.collarmc.pounce.Subscribe;
 import star.sequoia2.events.PlayerTickEvent;
+import star.sequoia2.events.TickEvent;
 
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -32,7 +33,7 @@ public final class TickScheduler {
     }
 
     @Subscribe
-    public void onTick(PlayerTickEvent event) {
+    public void onTick(TickEvent ignored) {
         Iterator<Scheduled> it = queue.iterator();
         while (it.hasNext()) {
             Scheduled s = it.next();
