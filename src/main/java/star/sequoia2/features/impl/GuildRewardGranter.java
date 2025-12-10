@@ -46,6 +46,7 @@ public class GuildRewardGranter extends ToggleFeature {
     private final IntSetting pageDelayMs = settings().number("PageDelayMs", "Delay between page turns when scanning", 450, 50, 2000);
     private final IntSetting clickDelayMs = settings().number("ClickDelayMs", "Delay between number-key clicks", 300, 25, 1000);
     private final BooleanSetting autoScrollEnabled = settings().bool("AutoScroll", "Auto-scroll to unique search match", true);
+    private final BooleanSetting blurSearchOnClick = settings().bool("BlurSearchAfterClick", "Unfocus Wynntils search after reward click", true);
 
 
     private static final int SLOT_NEXT = 28;
@@ -591,7 +592,9 @@ public class GuildRewardGranter extends ToggleFeature {
         if (giveTomeBtn != null && giveTomeBtn.contains(mx, my))   { giveTomeBtn.onClick().run(); event.cancel(); return; }
         if (giveEmsBtn != null && giveEmsBtn.contains(mx, my))    { giveEmsBtn.onClick().run(); event.cancel(); return; }
         if (dumpEmsBtn != null && dumpEmsBtn.contains(mx, my))    { dumpEmsBtn.onClick().run(); event.cancel(); }
-        blurSearchWidget();
+        if (blurSearchOnClick.get()) {
+            blurSearchWidget();
+        }
     }
 
     public record SimpleButton(int x, int y, int width, int height, Text label, Runnable onClick) {
