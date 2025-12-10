@@ -34,6 +34,7 @@ import star.sequoia2.utils.render.Render3DUtil;
 import star.sequoia2.utils.text.parser.TeXParser;
 import star.sequoia2.utils.wynn.HadesUtils;
 import star.sequoia2.client.update.UpdateManager;
+import star.sequoia2.utils.TickScheduler;
 
 import java.net.URISyntaxException;
 import java.security.CodeSource;
@@ -111,6 +112,7 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
         LOGGER.info("Initializing Seq client.");
         eventBus = new EventBus(mc::execute); //before initializing everything else
         eventBus.subscribe(this);
+        TickScheduler.init(eventBus);
 
         try {
             configuration = new Configuration();
