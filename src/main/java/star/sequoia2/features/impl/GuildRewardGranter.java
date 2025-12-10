@@ -576,10 +576,11 @@ public class GuildRewardGranter extends ToggleFeature {
         double scale = mc.getWindow().getScaleFactor();
         double mx = mc.mouse.getX() / scale;
         double my = mc.mouse.getY() / scale;
-        if (giveAspectBtn != null && giveAspectBtn.contains(mx, my)) { giveAspectBtn.onClick().run(); event.cancel(); blurSearchWidget(); return; }
-        if (giveTomeBtn != null && giveTomeBtn.contains(mx, my))   { giveTomeBtn.onClick().run(); event.cancel(); blurSearchWidget(); return; }
-        if (giveEmsBtn != null && giveEmsBtn.contains(mx, my))    { giveEmsBtn.onClick().run(); event.cancel(); blurSearchWidget(); return; }
-        if (dumpEmsBtn != null && dumpEmsBtn.contains(mx, my))    { dumpEmsBtn.onClick().run(); event.cancel(); blurSearchWidget(); }
+        if (giveAspectBtn != null && giveAspectBtn.contains(mx, my)) { giveAspectBtn.onClick().run(); event.cancel(); return; }
+        if (giveTomeBtn != null && giveTomeBtn.contains(mx, my))   { giveTomeBtn.onClick().run(); event.cancel(); return; }
+        if (giveEmsBtn != null && giveEmsBtn.contains(mx, my))    { giveEmsBtn.onClick().run(); event.cancel(); return; }
+        if (dumpEmsBtn != null && dumpEmsBtn.contains(mx, my))    { dumpEmsBtn.onClick().run(); event.cancel(); }
+        blurSearchWidget();
     }
 
     public record SimpleButton(int x, int y, int width, int height, Text label, Runnable onClick) {
