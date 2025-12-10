@@ -36,7 +36,7 @@ public class WebSocketFeature extends ToggleFeature {
     public BooleanSetting connectOnJoin = settings().bool("ConnectOnJoin", "Auto connect when joining", true);
 
     private static final String WS_DEV_URL = "ws://66.78.40.43:8085/ws";
-    private static final String WS_PROD_URL = "wss://api.sequoia.ooo/ws";
+    private static final String WS_PROD_URL = "wss://api.seqwawa.com/ws";
 
     @Getter
     private WebSocketClient client;
@@ -282,11 +282,16 @@ public class WebSocketFeature extends ToggleFeature {
             return;
         }
 
-        if (!isFirstConnection) {
-            isFirstConnection = true;
-            client.connect();
-        } else {
-            client.reconnect();
+        try {
+            if (!isFirstConnection) {
+                isFirstConnection = true;
+                client.connect();
+            } else {
+                client.reconnect();
+            }
+        } catch (Exception e) {
+            SeqClient.error("WebSocket connection attempt failed", e);
+            tryReconnect(true);
         }
     }
 
@@ -315,8 +320,6 @@ public class WebSocketFeature extends ToggleFeature {
             return;
         }
 
-        if (!Models.WorldState.onWorld() && !Models.WorldState.onHousing()) return;
-
         if (reconnectPending) return;
         reconnectPending = true;
 
@@ -327,7 +330,13 @@ public class WebSocketFeature extends ToggleFeature {
 
             if (client == null) initClient();        // create it lazily
 
-            if (!client.isOpen()) client.reconnect();
+            if (!client.isOpen()) {
+                try {
+                    client.reconnect();
+                } catch (Exception e) {
+                    SeqClient.error("WebSocket reconnect attempt failed", e);
+                }
+            }
         }), 10, TimeUnit.SECONDS);
 
     }

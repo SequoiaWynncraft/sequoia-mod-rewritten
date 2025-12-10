@@ -58,6 +58,15 @@ public final class GuiRoot implements RenderUtilAccessor, TextRendererAccessor, 
         float bx = (uiW - boxWidth) / 2f;
         float by = (uiH - boxHeight) / 2f;
 
+        float maxBtnWidth = btnW;
+        for (RelativeComponent c : categories) {
+            int textWidth = textRenderer().getWidth(c.name);
+            float needed = textWidth + pad * 2f;
+            if (needed > maxBtnWidth) {
+                maxBtnWidth = needed;
+            }
+        }
+
         Color normal = features().get(Settings.class).map(Settings::getThemeNormal).orElse(Color.black());
         Color dark = features().get(Settings.class).map(Settings::getThemeDark).orElse(Color.black());
         Color light = features().get(Settings.class).map(Settings::getThemeLight).orElse(Color.black());
@@ -65,7 +74,7 @@ public final class GuiRoot implements RenderUtilAccessor, TextRendererAccessor, 
         Color accent2 = features().get(Settings.class).map(Settings::getThemeAccent2).orElse(Color.black());
         Color accent3 = features().get(Settings.class).map(Settings::getThemeAccent3).orElse(Color.black());
 
-        float menuW = btnW + pad * 2f + 20f;
+        float menuW = maxBtnWidth + pad * 2f;
 
         render2DUtil().drawGlow(context, bx, by, bx + boxWidth, by + boxHeight, dark, rounding);
 
@@ -77,7 +86,15 @@ public final class GuiRoot implements RenderUtilAccessor, TextRendererAccessor, 
         context.disableScissor();
         matrices.pop();
 
-        render2DUtil().drawTexture(context, iconDark ? TextureStorage.icon_dark : TextureStorage.icon, bx + pad, by + pad, bx + pad + btnW, by + pad + btnW);
+        float logoX = bx + (menuW - btnW) / 2f;
+        float logoY = by + pad;
+
+        render2DUtil().drawTexture(context,
+                iconDark ? TextureStorage.icon_dark : TextureStorage.icon,
+                logoX,
+                logoY,
+                logoX + btnW,
+                logoY + btnW);
 
         float listX = bx + pad;
         float listY = by + btnW + pad * 2;
@@ -95,22 +112,18 @@ public final class GuiRoot implements RenderUtilAccessor, TextRendererAccessor, 
             if (i == settingsIdx) continue;
             RelativeComponent c = categories.get(i);
             float byTop = listY + drawIdx * (btnH + btnGap);
-            boolean hover = mouseX >= listX && mouseX <= listX + btnW && mouseY >= byTop && mouseY <= byTop + btnH;
 
-            int textWidth = textRenderer().getWidth(c.name);
-            float dynamicBtnW = Math.max(btnW, textWidth + pad * 2f);
+            boolean hover = mouseX >= listX && mouseX <= listX + maxBtnWidth && mouseY >= byTop && mouseY <= byTop + btnH;
 
             if (hover) {
-                render2DUtil().roundRectFilled(matrices, listX, byTop, listX + dynamicBtnW, byTop + btnH, rounding, new Color(dark.getRed(), dark.getGreen(), dark.getBlue(), 50));
+                render2DUtil().roundRectFilled(matrices, listX, byTop, listX + maxBtnWidth, byTop + btnH, rounding, new Color(dark.getRed(), dark.getGreen(), dark.getBlue(), 50));
             }
 
-            float textX = listX + pad;
+            float textX = listX + (maxBtnWidth - textRenderer().getWidth(c.name)) / 2f;
             float textY = byTop + (btnH - textRenderer().fontHeight) / 2f;
 
-            Color glowColor = accent2;
-
             if (i == selected) {
-                render2DUtil().drawGlow(context, listX, byTop, listX + dynamicBtnW, byTop + btnH, glowColor, rounding);
+                render2DUtil().drawGlow(context, listX, byTop, listX + maxBtnWidth, byTop + btnH, accent2, rounding);
             }
 
             context.drawText(textRenderer(), c.name, (int) textX, (int) textY - (hover ? 1 : 0), light.getColor(), true);
@@ -118,9 +131,8 @@ public final class GuiRoot implements RenderUtilAccessor, TextRendererAccessor, 
         }
 
         if (settingsIdx != -1) {
-            float settingsX = listX;
             float settingsY = by + boxHeight - pad - btnW;
-            boolean hoverSettings = mouseX >= settingsX && mouseX <= settingsX + btnW && mouseY >= settingsY && mouseY <= settingsY + btnW;
+            boolean hoverSettings = mouseX >= listX && mouseX <= listX + btnW && mouseY >= settingsY && mouseY <= settingsY + btnW;
 
             Color sStart;
             if (selected == settingsIdx) {
@@ -131,7 +143,7 @@ public final class GuiRoot implements RenderUtilAccessor, TextRendererAccessor, 
                 sStart = light;
             }
 
-            render2DUtil().drawTextureColored(context, TextureStorage.cogs, settingsX, settingsY, settingsX + btnW, settingsY + btnW, new java.awt.Color(sStart.getRed(), sStart.getGreen(), sStart.getBlue(), sStart.getAlpha()).getRGB());
+            render2DUtil().drawTextureColored(context, TextureStorage.cogs, listX, settingsY, listX + btnW, settingsY + btnW, new java.awt.Color(sStart.getRed(), sStart.getGreen(), sStart.getBlue(), sStart.getAlpha()).getRGB());
         }
 
         float contentX = bx + menuW + pad;
@@ -166,6 +178,15 @@ public final class GuiRoot implements RenderUtilAccessor, TextRendererAccessor, 
             return;
         }
 
+        float maxBtnWidth = btnW;
+        for (RelativeComponent c : categories) {
+            int textWidth = textRenderer().getWidth(c.name);
+            float needed = textWidth + pad * 2f;
+            if (needed > maxBtnWidth) {
+                maxBtnWidth = needed;
+            }
+        }
+
         float listX = bx + pad;
         float listY = by + btnW + pad * 2;
 
@@ -181,7 +202,7 @@ public final class GuiRoot implements RenderUtilAccessor, TextRendererAccessor, 
         for (int i = 0; i < categories.size(); i++) {
             if (i == settingsIdx) continue;
             float byTop = listY + drawIdx * (btnH + btnGap);
-            if (mouseX >= listX && mouseX <= listX + btnW && mouseY >= byTop && mouseY <= byTop + btnH) {
+            if (mouseX >= listX && mouseX <= listX + maxBtnWidth && mouseY >= byTop && mouseY <= byTop + btnH) {
                 selected = i;
                 return;
             }
