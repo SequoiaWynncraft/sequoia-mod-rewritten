@@ -45,16 +45,20 @@ public class GuildRewardGranter extends ToggleFeature {
     private static final int HOTBAR_TOME = 2;
     private static final int HOTBAR_EMS = 3;
     private static final String DUMP_TARGET = "cinfrascitizen";
+    private static final long AUTO_SCROLL_COOLDOWN_MS = 800;
+
+    // Settings
     private final IntSetting pageDelayMs = settings().number("PageDelayMs", "Delay between page turns when scanning", 350, 50, 2000);
     private final IntSetting clickDelayMs = settings().number("ClickDelayMs", "Delay between number-key clicks", 100, 25, 1000);
     private final BooleanSetting autoScrollEnabled = settings().bool("AutoScroll", "Auto-scroll to unique search match", true);
+
+    // State
     private final Map<String, Integer> nameToSlot = new ConcurrentHashMap<>();
     private final Map<String, Integer> nameToPage = new ConcurrentHashMap<>();
     private int currentPage = 0;
     private boolean scanning = false;
     private String lastSearchQuery = "";
     private long lastAutoScrollMs = 0L;
-    private static final long AUTO_SCROLL_COOLDOWN_MS = 800;
     private boolean inMembersScreen = false;
     private boolean lastSearchGrew = false;
     private String pendingAutoScroll = "";
@@ -130,6 +134,39 @@ public class GuildRewardGranter extends ToggleFeature {
                 && Models.Container.getCurrentContainer() instanceof GuildMemberListContainer
                 && !scanning) {
             scanAllPagesAsync();
+        }
+    }
+
+    @Subscribe
+    public void onMouse(MouseButtonEvent event) {
+        if (event.action() != 1) return;
+        if (!(mc.currentScreen instanceof GenericContainerScreen screen)) return;
+        if (!(Models.Container.getCurrentContainer() instanceof GuildMemberListContainer)) return;
+        double scale = mc.getWindow().getScaleFactor();
+        double mx = mc.mouse.getX() / scale;
+        double my = mc.mouse.getY() / scale;
+        SimpleButton simpleButton = giveAspectBtn;
+        if (simpleButton != null && simpleButton.contains(mx, my)) {
+            giveAspectBtn.onClick().run();
+            event.cancel();
+            return;
+        }
+        SimpleButton simpleButton2 = giveTomeBtn;
+        if (simpleButton2 != null && simpleButton2.contains(mx, my)) {
+            giveTomeBtn.onClick().run();
+            event.cancel();
+            return;
+        }
+        SimpleButton simpleButton3 = giveEmsBtn;
+        if (simpleButton3 != null && simpleButton3.contains(mx, my)) {
+            giveEmsBtn.onClick().run();
+            event.cancel();
+            return;
+        }
+        SimpleButton simpleButton4 = dumpEmsBtn;
+        if (simpleButton4 != null && simpleButton4.contains(mx, my)) {
+            dumpEmsBtn.onClick().run();
+            event.cancel();
         }
     }
 
@@ -504,39 +541,6 @@ public class GuildRewardGranter extends ToggleFeature {
     public record SimpleButton(int x, int y, int width, int height, Text label, Runnable onClick) {
         boolean contains(double mx, double my) {
             return mx >= x && mx <= x + width && my >= y && my <= y + height;
-        }
-    }
-
-    @Subscribe
-    public void onMouse(MouseButtonEvent event) {
-        if (event.action() == 1 && (mc.currentScreen instanceof GenericContainerScreen screen) && (Models.Container.getCurrentContainer() instanceof GuildMemberListContainer)) {
-            double scale = mc.getWindow().getScaleFactor();
-            double mx = mc.mouse.getX() / scale;
-            double my = mc.mouse.getY() / scale;
-            SimpleButton simpleButton = giveAspectBtn;
-            if (simpleButton != null && simpleButton.contains(mx, my)) {
-                giveAspectBtn.onClick().run();
-                event.cancel();
-                return;
-            }
-            SimpleButton simpleButton2 = giveTomeBtn;
-            if (simpleButton2 != null && simpleButton2.contains(mx, my)) {
-                giveTomeBtn.onClick().run();
-                event.cancel();
-                return;
-            }
-            SimpleButton simpleButton3 = giveEmsBtn;
-            if (simpleButton3 != null && simpleButton3.contains(mx, my)) {
-                giveEmsBtn.onClick().run();
-                event.cancel();
-                return;
-            }
-            SimpleButton simpleButton4 = dumpEmsBtn;
-            if (simpleButton4 == null || !simpleButton4.contains(mx, my)) {
-                return;
-            }
-            dumpEmsBtn.onClick().run();
-            event.cancel();
         }
     }
 }
