@@ -1,7 +1,6 @@
 package star.sequoia2.features.impl;
 
 import com.collarmc.pounce.Subscribe;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
 import net.minecraft.text.PlainTextContent;
 import net.minecraft.text.Style;
@@ -22,8 +21,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static star.sequoia2.client.SeqClient.mc;
 import static star.sequoia2.features.impl.ws.ChatHookFeature.remove_multiline;
-
 
 public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserAccessor, EventBusAccessor {
     private final Deque<PendingRaid> pendingRaids = new ConcurrentLinkedDeque<>();
@@ -38,8 +37,7 @@ public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserA
     private static final Pattern XP_PATTERN = Pattern.compile(".*Needed XP:.*?(\\d+).*?/(\\d+).*");
     private static final long STATS_TIMEOUT_MS = 15000L;
 
-    private static final Pattern SECTION_CODES =
-            Pattern.compile("§[0-9a-fk-or<>]", Pattern.CASE_INSENSITIVE);
+    private static final Pattern SECTION_CODES = Pattern.compile("§[0-9a-fk-or<>]", Pattern.CASE_INSENSITIVE);
 
     public GRaidsUntilLvlUpFeature() {
         super("Guild raid completion levelup progress", "Shows you the amount of graids that are needed to reach the next guild level.", true);
@@ -47,9 +45,7 @@ public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserA
 
     public static int calculateNeededRaids(long current, long needed, long xpPerRaid) {
         long missing = needed - current;
-
         if (missing <= 0) return 0;
-
         return (int) Math.ceil((double) missing / xpPerRaid);
     }
 
@@ -58,7 +54,6 @@ public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserA
         if (!s.isBold()) return false;
         if (s.getColor() != TextColor.fromFormatting(Formatting.GOLD)) return false;
         if (!(text.getContent() instanceof PlainTextContent.Literal literal)) return false;
-
         String t = literal.string();
         return !t.isEmpty();
     }
@@ -67,9 +62,6 @@ public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserA
     public void onChatMessage(PacketEvent.PacketReceiveEvent event) {
         if (!(event.packet() instanceof GameMessageS2CPacket(Text content, boolean overlay))) return;
         if (content == null || overlay) return;
-        if(!features().getIfActive(GRaidsUntilLvlUpFeature.class).map(GRaidsUntilLvlUpFeature::isActive).orElse(false)) {
-            return;
-        }
 
         String raw = content.getString();
         if (expectGuStats && statsRequestAtMs > 0 && System.currentTimeMillis() - statsRequestAtMs > STATS_TIMEOUT_MS) {
@@ -83,46 +75,43 @@ public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserA
             }
         }
 
-        if(expectGuStats && (raw.isBlank() || content.toString().equals("empty"))) {
+        if (expectGuStats && (raw.isBlank() || content.toString().equals("empty"))) {
             event.cancel();
             return;
         }
-        if(expectGuStats && GRaidsUntilLvlUpFeature.isGuStatsHeader(content)) {
+        if (expectGuStats && GRaidsUntilLvlUpFeature.isGuStatsHeader(content)) {
             suppressNextGuStats = true;
             expectGuStats = false;
             statsRequestAtMs = 0L;
         }
         if (suppressNextGuStats) {
-            if(raw.contains("Total Members:")) {
+            if (raw.contains("Total Members:")) {
                 suppressNextGuStats = false;
             }
 
             Matcher m = XP_PATTERN.matcher(raw);
-
             if (m.matches()) {
                 String currentXp = m.group(1);
                 String requiredXp = m.group(2);
-
                 try {
                     long cur = Long.parseLong(currentXp);
                     long need = Long.parseLong(requiredXp);
                     processPendingWithStats(cur, need);
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
             }
 
             event.cancel();
             return;
         }
 
-
         StyledText styledText = StyledText.fromComponent(content);
         String tex = teXParser().toTeX(styledText.stripAlignment());
-
         tex = remove_multiline(tex);
 
         if (GUILD_RAID_BLOCK.matcher(tex).find() || OTHER_GUILD_RAID_BLOCK.matcher(tex).find()) {
-            if(MinecraftClient.getInstance().getNetworkHandler() == null) return;
-            MinecraftClient.getInstance().getNetworkHandler().sendChatCommand("gu stats");
+            if (mc.getNetworkHandler() == null) return;
+            mc.getNetworkHandler().sendChatCommand("gu stats");
             expectGuStats = true;
             statsRequestAtMs = System.currentTimeMillis();
             event.cancel();
@@ -159,9 +148,9 @@ public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserA
         int raidsLeft = calculateNeededRaids(current, needed, xpPerRaid);
         StyledText out = message.append((needed == 0L ? "" : "§3. §b" + raidsLeft + " guild raids left to level up."));
 
-        MinecraftClient.getInstance().execute(() -> {
-            if (MinecraftClient.getInstance().inGameHud != null) {
-                MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(out.getComponent());
+        mc.execute(() -> {
+            if (mc.inGameHud != null) {
+                mc.inGameHud.getChatHud().addMessage(out.getComponent());
             }
         });
     }
