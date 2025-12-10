@@ -67,7 +67,6 @@ public class GuildRewardGranter extends ToggleFeature {
     private volatile boolean stopDumpDueToNoEms = false;
     private boolean inMembersScreen = false;
     private String pendingAutoScroll = "";
-    private boolean initialScanInProgress = false;
     private boolean initialScanDone = false;
     private SimpleButton giveAspectBtn;
     private SimpleButton giveTomeBtn;
@@ -93,7 +92,6 @@ public class GuildRewardGranter extends ToggleFeature {
         stopDumpDueToNoEms = false;
         inMembersScreen = false;
         pendingAutoScroll = "";
-        initialScanInProgress = false;
         initialScanDone = false;
     }
 
@@ -107,7 +105,6 @@ public class GuildRewardGranter extends ToggleFeature {
         lastAutoScrollMs = 0L;
         stopDumpDueToNoEms = false;
         pendingAutoScroll = "";
-        initialScanInProgress = false;
         initialScanDone = false;
     }
 
@@ -123,18 +120,14 @@ public class GuildRewardGranter extends ToggleFeature {
                 lastAutoScrollMs = 0L;
                 stopDumpDueToNoEms = false;
                 pendingAutoScroll = "";
-                initialScanInProgress = false;
                 initialScanDone = false;
             }
             return;
         }
         inMembersScreen = true;
-        if (initialScanInProgress) {
-            blurSearchWidget();
-        }
         ensureButtons(screen, event.context());
         if (!initialScanDone && !scanning && pageHasHeads(screen)) {
-            initialScanInProgress = true;
+            initialScanDone = true;
             scanAllPagesAsync();
         }
         maybeAutoNavigateSearch();
@@ -145,9 +138,6 @@ public class GuildRewardGranter extends ToggleFeature {
         if (event.screen() instanceof GenericContainerScreen
                 && Models.Container.getCurrentContainer() instanceof GuildMemberListContainer
                 && !scanning) {
-            if (!initialScanDone) {
-                initialScanInProgress = true;
-            }
             scanAllPagesAsync();
         }
     }
@@ -220,7 +210,6 @@ public class GuildRewardGranter extends ToggleFeature {
     private CompletableFuture<Void> scanAllPagesAsync() {
         if (!(mc.currentScreen instanceof GenericContainerScreen screen)) {
             sendStatus("Not in guild members screen");
-            initialScanInProgress = false;
             return CompletableFuture.completedFuture(null);
         }
         if (scanning) {
@@ -234,10 +223,6 @@ public class GuildRewardGranter extends ToggleFeature {
         CompletableFuture<Integer> forward = scanForward(screen, 0);
         return forward.thenComposeAsync(pages -> rewindToFirst(screen).thenApply(v -> pages), SeqClient.SCHEDULER).handle((pages, ex) -> {
             scanning = false;
-            if (initialScanInProgress) {
-                initialScanInProgress = false;
-                initialScanDone = true;
-            }
             if (ex != null) {
                 SeqClient.error("GuildRewardGranter scan failed", ex);
                 sendStatus("Scan failed: " + ex.getMessage());
