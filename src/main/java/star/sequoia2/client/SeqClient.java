@@ -186,6 +186,7 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
         features.add(new WebSocketFeature());
         features.add(new EcoMessageFilter());
         features.add(new GuildRewardTrackingFeature());
+        features.add(new GuildRewardGranter());
         features.add(new GuildWarTracker());
         features.add(new GRaidsUntilLvlUpFeature());
         //TODO: finish commented out features.
