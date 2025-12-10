@@ -63,7 +63,6 @@ public class GuildRewardGranter extends ToggleFeature {
     private String lastSearchQuery = "";
     private long lastAutoScrollMs = 0L;
     private boolean inMembersScreen = false;
-    private boolean lastSearchGrew = false;
     private String pendingAutoScroll = "";
     private boolean initialScanDone = false;
     private SimpleButton giveAspectBtn;
@@ -88,7 +87,6 @@ public class GuildRewardGranter extends ToggleFeature {
         lastSearchQuery = "";
         lastAutoScrollMs = 0L;
         inMembersScreen = false;
-        lastSearchGrew = false;
         pendingAutoScroll = "";
         initialScanDone = false;
     }
@@ -101,7 +99,6 @@ public class GuildRewardGranter extends ToggleFeature {
         inMembersScreen = false;
         lastSearchQuery = "";
         lastAutoScrollMs = 0L;
-        lastSearchGrew = false;
         pendingAutoScroll = "";
         initialScanDone = false;
     }
@@ -116,7 +113,6 @@ public class GuildRewardGranter extends ToggleFeature {
                 nameToPage.clear();
                 lastSearchQuery = "";
                 lastAutoScrollMs = 0L;
-                lastSearchGrew = false;
                 pendingAutoScroll = "";
                 initialScanDone = false;
             }
@@ -151,16 +147,16 @@ public class GuildRewardGranter extends ToggleFeature {
         int gap = 4;
         if (giveAspectBtn == null) {
             giveAspectBtn = new SimpleButton(baseX, baseY, w, h, Text.literal("Give Aspect"), () -> {
-                giveToSearch(1);
+                giveToSearch(HOTBAR_ASPECT);
             });
             giveTomeBtn = new SimpleButton(baseX, baseY + 16 + 4, w, h, Text.literal("Give Tome"), () -> {
-                giveToSearch(2);
+                giveToSearch(HOTBAR_TOME);
             });
             giveEmsBtn = new SimpleButton(baseX, baseY + (2 * (16 + 4)), w, h, Text.literal("Give Ems"), () -> {
-                giveToSearch(3);
+                giveToSearch(HOTBAR_EMS);
             });
             dumpEmsBtn = new SimpleButton(baseX, baseY + (3 * (16 + 4)), w, h, Text.literal("Dump Ems"), () -> {
-                giveToName(DUMP_TARGET, 3);
+                giveToName(DUMP_TARGET, HOTBAR_EMS);
             });
         }
         double scale = mc.getWindow().getScaleFactor();
@@ -188,7 +184,7 @@ public class GuildRewardGranter extends ToggleFeature {
         SeqClient.SCHEDULER.execute(() -> {
             int clicks;
             try {
-                clicks = hotbarKey == 1 ? 20 : (hotbarKey == 3 && DUMP_TARGET.equals(normalizedTarget)) ? 20 : 1;
+                clicks = hotbarKey == HOTBAR_ASPECT ? 20 : (hotbarKey == HOTBAR_EMS && DUMP_TARGET.equals(normalizedTarget)) ? 20 : 1;
                 CompletableFuture<Void> ready = (!nameToSlot.isEmpty() || scanning) ? CompletableFuture.completedFuture(null) : scanAllPagesAsync();
                 int clicksFinal = clicks;
                 ready.thenComposeAsync(v -> attemptGive(normalizedTarget, hotbarKey, clicksFinal, true), SeqClient.SCHEDULER).whenComplete((clicked, ex) -> {
@@ -383,13 +379,11 @@ public class GuildRewardGranter extends ToggleFeature {
     private void maybeAutoNavigateSearch() {
         if (!autoScrollEnabled.get()) return;
         String search = normalizeName(readSearchText().orElse(""));
-        boolean grew = search.length() > lastSearchQuery.length();
         if (search.equals(lastSearchQuery)) {
             return;
         }
         lastSearchQuery = search;
-        lastSearchGrew = grew;
-        if (!grew || search.length() < 2) {
+        if (search.length() < 2) {
             return;
         }
         long now = System.currentTimeMillis();
@@ -561,9 +555,9 @@ public class GuildRewardGranter extends ToggleFeature {
 
     private static String labelForHotbar(int key) {
         return switch (key) {
-            case 1 -> "Aspect";
-            case 2 -> "Tome";
-            case 3 -> "Ems";
+            case HOTBAR_ASPECT -> "Aspect";
+            case HOTBAR_TOME -> "Tome";
+            case HOTBAR_EMS -> "Ems";
             default -> "Reward";
         };
     }
