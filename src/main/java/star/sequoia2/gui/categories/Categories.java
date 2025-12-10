@@ -1,9 +1,6 @@
 package star.sequoia2.gui.categories;
 
-import star.sequoia2.gui.categories.impl.ChangelogCategory;
-import star.sequoia2.gui.categories.impl.FeaturesCategory;
-import star.sequoia2.gui.categories.impl.PlayerLookupCategory;
-import star.sequoia2.gui.categories.impl.SettingsCategory;
+import star.sequoia2.gui.categories.impl.*;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -25,11 +22,13 @@ public final class Categories {
         register(FEATURES);
         register(CHANGELOG);
         register(LOOKUP);
+        register(PARTYFINDER);
         register(SETTINGS);
     }
 
     public static final ChangelogCategory CHANGELOG = new ChangelogCategory();
     public static final FeaturesCategory FEATURES = new FeaturesCategory();
     public static final PlayerLookupCategory LOOKUP = new PlayerLookupCategory();
+    public static final PartyFinderCategory PARTYFINDER = new PartyFinderCategory();
     public static final SettingsCategory SETTINGS = new SettingsCategory();
 }
