@@ -67,6 +67,7 @@ public class GuildRewardGranter extends ToggleFeature {
     private long lastAutoScrollMs = 0L;
     private volatile boolean stopDumpDueToNoEms = false;
     private boolean inMembersScreen = false;
+    private long screenSession = 0L;
     private String pendingAutoScroll = "";
     private boolean initialScanDone = false;
     private SimpleButton giveAspectBtn;
@@ -92,6 +93,7 @@ public class GuildRewardGranter extends ToggleFeature {
         lastAutoScrollMs = 0L;
         stopDumpDueToNoEms = false;
         inMembersScreen = false;
+        screenSession = 0L;
         pendingAutoScroll = "";
         initialScanDone = false;
     }
@@ -102,6 +104,7 @@ public class GuildRewardGranter extends ToggleFeature {
         nameToPage.clear();
         scanning = false;
         inMembersScreen = false;
+        screenSession++;
         lastSearchQuery = "";
         lastAutoScrollMs = 0L;
         stopDumpDueToNoEms = false;
@@ -111,8 +114,10 @@ public class GuildRewardGranter extends ToggleFeature {
 
     @Subscribe
     public void onRender2D(Render2DEvent event) {
+        if (!isActive()) return;
         if (!(mc.currentScreen instanceof GenericContainerScreen screen) || !(Models.Container.getCurrentContainer() instanceof GuildMemberListContainer)) {
             if (inMembersScreen) {
+                screenSession++;
                 inMembersScreen = false;
                 scanning = false;
                 nameToSlot.clear();
@@ -136,6 +141,7 @@ public class GuildRewardGranter extends ToggleFeature {
 
     @Subscribe
     public void onScreenOpened(ScreenOpenedEvent event) {
+        if (!isActive()) return;
         if (event.screen() instanceof GenericContainerScreen
                 && Models.Container.getCurrentContainer() instanceof GuildMemberListContainer
                 && !scanning) {
@@ -209,27 +215,38 @@ public class GuildRewardGranter extends ToggleFeature {
     }
 
     private CompletableFuture<Void> scanAllPagesAsync() {
+        if (!isActive()) {
+            return CompletableFuture.completedFuture(null);
+        }
         if (!(mc.currentScreen instanceof GenericContainerScreen screen)) {
             sendStatus("Not in guild members screen");
+            return CompletableFuture.completedFuture(null);
+        }
+        if (!isCurrentMembersScreen(screen)) {
             return CompletableFuture.completedFuture(null);
         }
         if (scanning) {
             return CompletableFuture.completedFuture(null);
         }
         scanning = true;
+        long session = screenSession;
         nameToSlot.clear();
         nameToPage.clear();
         currentPage = 0;
         sendStatus("Scanning guild members...");
-        CompletableFuture<Integer> forward = scanForward(screen, 0);
-        return forward.thenComposeAsync(pages -> rewindToFirst(screen).thenApply(v -> pages), SeqClient.SCHEDULER).handle((pages, ex) -> {
+        CompletableFuture<Integer> forward = scanForward(screen, 0, session);
+        return forward.thenComposeAsync(pages -> rewindToFirst(screen, session).thenApply(v -> pages), SeqClient.SCHEDULER).handle((pages, ex) -> {
             scanning = false;
             if (ex != null) {
                 SeqClient.error("GuildRewardGranter scan failed", ex);
-                sendStatus("Scan failed: " + ex.getMessage());
+                if (isCurrentMembersScreen(screen)) {
+                    sendStatus("Scan failed: " + ex.getMessage());
+                }
             } else {
                 int pageCount = pages == null ? 0 : pages;
-                sendStatus("Scanned " + pageCount + " page(s), found " + nameToSlot.size() + " members");
+                if (isCurrentMembersScreen(screen)) {
+                    sendStatus("Scanned " + pageCount + " page(s), found " + nameToSlot.size() + " members");
+                }
             }
             if (StringUtils.isNotBlank(pendingAutoScroll)) {
                 String pending = pendingAutoScroll;
@@ -240,21 +257,29 @@ public class GuildRewardGranter extends ToggleFeature {
         });
     }
 
-    private CompletableFuture<Integer> scanForward(GenericContainerScreen screen, int pages) {
+    private CompletableFuture<Integer> scanForward(GenericContainerScreen screen, int pages, long session) {
+        if (!isCurrentMembersScreen(screen) || session != screenSession) {
+            scanning = false;
+            return CompletableFuture.completedFuture(pages);
+        }
         readMembersOnPage(screen);
         if (!clickIfPresent(screen, SLOT_NEXT)) {
             return CompletableFuture.completedFuture(pages + 1);
         }
         currentPage++;
-        return delay(pageDelayMs.get()).thenComposeAsync(v -> scanForward(screen, pages + 1), SeqClient.SCHEDULER);
+        return delay(pageDelayMs.get()).thenComposeAsync(v -> scanForward(screen, pages + 1, session), SeqClient.SCHEDULER);
     }
 
-    private CompletableFuture<Void> rewindToFirst(GenericContainerScreen screen) {
+    private CompletableFuture<Void> rewindToFirst(GenericContainerScreen screen, long session) {
+        if (!isCurrentMembersScreen(screen) || session != screenSession) {
+            scanning = false;
+            return CompletableFuture.completedFuture(null);
+        }
         if (!clickIfPresent(screen, SLOT_PREV)) {
             return CompletableFuture.completedFuture(null);
         }
         currentPage = Math.max(0, currentPage - 1);
-        return delay(pageDelayMs.get()).thenComposeAsync(v -> rewindToFirst(screen), SeqClient.SCHEDULER);
+        return delay(pageDelayMs.get()).thenComposeAsync(v -> rewindToFirst(screen, session), SeqClient.SCHEDULER);
     }
 
     private void readMembersOnPage(GenericContainerScreen screen) {
@@ -275,6 +300,9 @@ public class GuildRewardGranter extends ToggleFeature {
         if (!(mc.currentScreen instanceof GenericContainerScreen screen)) {
             return false;
         }
+        if (!isCurrentMembersScreen(screen)) {
+            return false;
+        }
         String key = normalizeName(targetName);
         for (int slotIdx : MEMBER_BOUNDS.getSlots()) {
             Slot slot = screen.getScreenHandler().getSlot(slotIdx);
@@ -291,6 +319,9 @@ public class GuildRewardGranter extends ToggleFeature {
 
     private CompletableFuture<Boolean> clickPlayerAsync(String targetName, int hotbarKey, int times) {
         if (!(mc.currentScreen instanceof GenericContainerScreen screen)) {
+            return CompletableFuture.completedFuture(false);
+        }
+        if (!isCurrentMembersScreen(screen)) {
             return CompletableFuture.completedFuture(false);
         }
         String key = normalizeName(targetName);
@@ -311,6 +342,9 @@ public class GuildRewardGranter extends ToggleFeature {
     }
 
     private CompletableFuture<Boolean> navigateToPage(GenericContainerScreen screen, int targetPage) {
+        if (!isCurrentMembersScreen(screen)) {
+            return CompletableFuture.completedFuture(false);
+        }
         if (currentPage == targetPage) {
             return CompletableFuture.completedFuture(true);
         }
@@ -332,6 +366,9 @@ public class GuildRewardGranter extends ToggleFeature {
         CompletableFuture<Void> chain = CompletableFuture.completedFuture(null);
         for (int i = 0; i < times; i++) {
             chain = chain.thenRunAsync(() -> {
+                if (!isCurrentMembersScreen(screen)) {
+                    return;
+                }
                 if (hotbarKey == HOTBAR_EMS && stopDumpDueToNoEms) {
                     return;
                 }
@@ -341,6 +378,9 @@ public class GuildRewardGranter extends ToggleFeature {
             }, SeqClient.SCHEDULER);
             if (i < times - 1) {
                 chain = chain.thenComposeAsync(v -> {
+                    if (!isCurrentMembersScreen(screen)) {
+                        return CompletableFuture.completedFuture(null);
+                    }
                     if (hotbarKey == HOTBAR_EMS && stopDumpDueToNoEms) {
                         return CompletableFuture.completedFuture(null);
                     }
@@ -357,7 +397,14 @@ public class GuildRewardGranter extends ToggleFeature {
         return f;
     }
 
+    private boolean isCurrentMembersScreen(GenericContainerScreen screen) {
+        return mc.currentScreen == screen && Models.Container.getCurrentContainer() instanceof GuildMemberListContainer;
+    }
+
     private boolean clickIfPresent(GenericContainerScreen screen, int slotIdx) {
+        if (!isCurrentMembersScreen(screen)) {
+            return false;
+        }
         Slot slot = screen.getScreenHandler().getSlot(slotIdx);
         if (slot == null || !slot.hasStack()) {
             return false;
@@ -388,10 +435,12 @@ public class GuildRewardGranter extends ToggleFeature {
 
     @Subscribe
     public void onChat(PacketEvent.PacketReceiveEvent event) {
+        if (!isActive()) return;
         if (!(event.packet() instanceof GameMessageS2CPacket(Text content, boolean overlay))) return;
-        if (overlay || content == null) return;
+        if (content == null) return;
         String msg = content.getString();
-        if (msg.contains("Your guild does not have enough Emeralds to send a reward")) {
+        String plain = msg == null ? "" : msg.replaceAll("§.", "").toLowerCase(Locale.ROOT);
+        if (plain.contains("guild does not have enough emeralds") || plain.contains("not have enough emeralds to send a reward")) {
             stopDumpDueToNoEms = true;
         }
     }
@@ -582,6 +631,7 @@ public class GuildRewardGranter extends ToggleFeature {
 
     @Subscribe
     public void onMouse(MouseButtonEvent event) {
+        if (!isActive()) return;
         if (event.action() != 1) return;
         if (!(mc.currentScreen instanceof GenericContainerScreen screen)) return;
         if (!(Models.Container.getCurrentContainer() instanceof GuildMemberListContainer)) return;
