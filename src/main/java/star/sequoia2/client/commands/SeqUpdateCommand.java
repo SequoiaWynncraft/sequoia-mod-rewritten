@@ -8,6 +8,7 @@ import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import star.sequoia2.accessors.NotificationsAccessor;
+import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.commands.SeqUpdateCommand.SourceBridge;
 import star.sequoia2.client.types.command.Command;
 import star.sequoia2.client.update.ReleaseInfo;
@@ -36,6 +37,21 @@ public class SeqUpdateCommand extends Command implements NotificationsAccessor {
                         .then(ClientCommandManager.literal("install")
                                 .executes(ctx -> {
                                     UpdateManager.installLatest(new SourceBridge(ctx.getSource()));
+                                    return 1;
+                                }))
+                        .then(ClientCommandManager.literal("force")
+                                .executes(ctx -> {
+                                    var cached = UpdateManager.getCachedRelease()
+                                            .orElseGet(() -> {
+                                                SeqClient.debug("Force update: refreshing release info");
+                                                UpdateManager.checkForUpdates(true);
+                                                return UpdateManager.getCachedRelease().orElse(null);
+                                            });
+                                    if (cached == null) {
+                                        ctx.getSource().sendFeedback(prefixed(Text.literal("No release info cached; run /sequpdate first.").formatted(Formatting.RED)));
+                                        return 0;
+                                    }
+                                    UpdateManager.forceInstall(cached, new SourceBridge(ctx.getSource()));
                                     return 1;
                                 }))
         );
