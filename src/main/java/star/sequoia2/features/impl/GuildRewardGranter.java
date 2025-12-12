@@ -42,7 +42,6 @@ import static star.sequoia2.client.SeqClient.mc;
  */
 public class GuildRewardGranter extends ToggleFeature {
 
-    // Settings
     private final IntSetting pageDelayMs = settings().number("PageDelayMs", "Delay between page turns when scanning", 450, 50, 2000);
     private final IntSetting clickDelayMs = settings().number("ClickDelayMs", "Delay between number-key clicks", 300, 25, 1000);
     private final BooleanSetting autoScrollEnabled = settings().bool("AutoScroll", "Auto-scroll to unique search match", true);
@@ -550,10 +549,6 @@ public class GuildRewardGranter extends ToggleFeature {
         } catch (Exception e) {
             return fallback;
         }
-    }
-
-    private void sendStatus(String msg) {
-        mc.execute(() -> mc.getMessageHandler().onGameMessage(SeqClient.prefix(Text.literal(msg)), false));
     }
 
     private void blurSearchWidget() {
