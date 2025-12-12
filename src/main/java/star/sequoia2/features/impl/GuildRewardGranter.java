@@ -37,9 +37,6 @@ import java.util.concurrent.TimeUnit;
 
 import static star.sequoia2.client.SeqClient.mc;
 
-/**
- * Automates giving guild rewards (aspects/tomes/emeralds) from the guild member list.
- */
 public class GuildRewardGranter extends ToggleFeature {
 
     private final IntSetting pageDelayMs = settings().number("PageDelayMs", "Delay between page turns when scanning", 450, 50, 2000);
@@ -57,7 +54,6 @@ public class GuildRewardGranter extends ToggleFeature {
     private static final String DUMP_TARGET = "cinfrascitizen";
     private static final long AUTO_SCROLL_COOLDOWN_MS = 800;
 
-    // State
     private final Map<String, Integer> nameToSlot = new ConcurrentHashMap<>();
     private final Map<String, Integer> nameToPage = new ConcurrentHashMap<>();
     private int currentPage = 0;
