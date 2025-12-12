@@ -114,7 +114,6 @@ public class GuildRewardGranter extends ToggleFeature {
 
     @Subscribe
     public void onRender2D(Render2DEvent event) {
-        if (!isActive()) return;
         if (!(mc.currentScreen instanceof GenericContainerScreen screen) || !(Models.Container.getCurrentContainer() instanceof GuildMemberListContainer)) {
             if (inMembersScreen) {
                 screenSession++;
@@ -156,7 +155,6 @@ public class GuildRewardGranter extends ToggleFeature {
         int baseY = sy + 20;
         int w = 80;
         int h = 16;
-        int gap = 4;
         if (giveAspectBtn == null) {
             giveAspectBtn = new SimpleButton(baseX, baseY, w, h, Text.literal("Give Aspect"), searchClick(HOTBAR_ASPECT));
             giveTomeBtn = new SimpleButton(baseX, baseY + 16 + 4, w, h, Text.literal("Give Tome"), searchClick(HOTBAR_TOME));
@@ -189,7 +187,7 @@ public class GuildRewardGranter extends ToggleFeature {
         if (hotbarKey == HOTBAR_EMS) {
             stopDumpDueToNoEms = false;
         }
-        sendStatus("Attempting to give " + labelForHotbar(hotbarKey) + " to " + target);
+        notify(prefixed(Text.literal("Attempting to give " + labelForHotbar(hotbarKey) + " to " + target)), "guildrewardgranter-status");
         SeqClient.SCHEDULER.execute(() -> {
             int clicks;
             try {
@@ -199,23 +197,23 @@ public class GuildRewardGranter extends ToggleFeature {
                 ready.thenComposeAsync(v -> attemptGive(normalizedTarget, hotbarKey, clicksFinal, true), SeqClient.SCHEDULER).whenComplete((clicked, ex) -> {
                     if (ex != null) {
                         SeqClient.error("GuildRewardGranter failed", ex);
-                        notify(Text.literal("Failed to give reward: " + ex.getMessage()), "guildrewardgranter-error");
+                        notify(prefixed(Text.literal("Failed to give reward: " + ex.getMessage())), "guildrewardgranter-error");
                     } else if (!Boolean.TRUE.equals(clicked)) {
-                        notify(Text.literal("Player not found: " + target), "guildrewardgranter-notfound");
+                        notify(prefixed(Text.literal("Player not found: " + target)), "guildrewardgranter-notfound");
                     } else {
-                        sendStatus("Sent " + clicksFinal + " " + labelForHotbar(hotbarKey) + " click(s) to " + target);
+                        notify(prefixed(Text.literal("Sent " + clicksFinal + " " + labelForHotbar(hotbarKey) + " click(s) to " + target)), "guildrewardgranter-status");
                     }
                 });
             } catch (Exception e) {
                 SeqClient.error("GuildRewardGranter failed", e);
-                notify(Text.literal("Failed to give reward: " + e.getMessage()), "guildrewardgranter-error");
+                notify(prefixed(Text.literal("Failed to give reward: " + e.getMessage())), "guildrewardgranter-error");
             }
         });
     }
 
     private CompletableFuture<Void> scanAllPagesAsync() {
         if (!(mc.currentScreen instanceof GenericContainerScreen screen)) {
-            sendStatus("Not in guild members screen");
+            notify(prefixed(Text.literal("Not in guild members screen")), "guildrewardgranter-status");
             return CompletableFuture.completedFuture(null);
         }
         if (!isCurrentMembersScreen(screen)) {
@@ -229,19 +227,19 @@ public class GuildRewardGranter extends ToggleFeature {
         nameToSlot.clear();
         nameToPage.clear();
         currentPage = 0;
-        sendStatus("Scanning guild members...");
+        notify(prefixed(Text.literal("Scanning guild members...")), "guildrewardgranter-status");
         CompletableFuture<Integer> forward = scanForward(screen, 0, session);
         return forward.thenComposeAsync(pages -> rewindToFirst(screen, session).thenApply(v -> pages), SeqClient.SCHEDULER).handle((pages, ex) -> {
             scanning = false;
             if (ex != null) {
                 SeqClient.error("GuildRewardGranter scan failed", ex);
                 if (isCurrentMembersScreen(screen)) {
-                    sendStatus("Scan failed: " + ex.getMessage());
+                    notify(prefixed(Text.literal("Scan failed: " + ex.getMessage())), "guildrewardgranter-status");
                 }
             } else {
                 int pageCount = pages == null ? 0 : pages;
                 if (isCurrentMembersScreen(screen)) {
-                    sendStatus("Scanned " + pageCount + " page(s), found " + nameToSlot.size() + " members");
+                    notify(prefixed(Text.literal("Scanned " + pageCount + " page(s), found " + nameToSlot.size() + " members")), "guildrewardgranter-status");
                 }
             }
             if (StringUtils.isNotBlank(pendingAutoScroll)) {
@@ -325,7 +323,7 @@ public class GuildRewardGranter extends ToggleFeature {
         Integer page = match == null ? null : nameToPage.get(match);
         Integer slot = match == null ? null : nameToSlot.get(match);
         if (page == null || slot == null) {
-            sendStatus("No entry cached for " + targetName + "; scan found " + nameToSlot.size() + " names");
+            notify(prefixed(Text.literal("No entry cached for " + targetName + "; scan found " + nameToSlot.size() + " names")), "guildrewardgranter-status");
             return CompletableFuture.completedFuture(false);
         }
         return navigateToPage(screen, page).thenComposeAsync(success -> {
@@ -511,6 +509,9 @@ public class GuildRewardGranter extends ToggleFeature {
     }
 
     private CompletableFuture<Boolean> attemptGive(String targetName, int hotbarKey, int clicks, boolean allowRescan) {
+        if (!(mc.currentScreen instanceof GenericContainerScreen screen) || !isCurrentMembersScreen(screen)) {
+            return CompletableFuture.completedFuture(false);
+        }
         if (clickVisiblePlayer(targetName, hotbarKey, clicks)) {
             return CompletableFuture.completedFuture(true);
         }
@@ -626,7 +627,6 @@ public class GuildRewardGranter extends ToggleFeature {
 
     @Subscribe
     public void onMouse(MouseButtonEvent event) {
-        if (!isActive()) return;
         if (event.action() != 1) return;
         if (!(mc.currentScreen instanceof GenericContainerScreen screen)) return;
         if (!(Models.Container.getCurrentContainer() instanceof GuildMemberListContainer)) return;
