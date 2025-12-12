@@ -141,7 +141,6 @@ public class GuildRewardGranter extends ToggleFeature {
 
     @Subscribe
     public void onScreenOpened(ScreenOpenedEvent event) {
-        if (!isActive()) return;
         if (event.screen() instanceof GenericContainerScreen
                 && Models.Container.getCurrentContainer() instanceof GuildMemberListContainer
                 && !scanning) {
@@ -215,9 +214,6 @@ public class GuildRewardGranter extends ToggleFeature {
     }
 
     private CompletableFuture<Void> scanAllPagesAsync() {
-        if (!isActive()) {
-            return CompletableFuture.completedFuture(null);
-        }
         if (!(mc.currentScreen instanceof GenericContainerScreen screen)) {
             sendStatus("Not in guild members screen");
             return CompletableFuture.completedFuture(null);
@@ -435,7 +431,6 @@ public class GuildRewardGranter extends ToggleFeature {
 
     @Subscribe
     public void onChat(PacketEvent.PacketReceiveEvent event) {
-        if (!isActive()) return;
         if (!(event.packet() instanceof GameMessageS2CPacket(Text content, boolean overlay))) return;
         if (content == null) return;
         String msg = content.getString();
