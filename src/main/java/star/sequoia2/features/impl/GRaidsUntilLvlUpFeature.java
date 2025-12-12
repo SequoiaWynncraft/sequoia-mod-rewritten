@@ -58,7 +58,7 @@ public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserA
         return !t.isEmpty();
     }
 
-    @Subscribe
+    @Subscribe(priority = 999)
     public void onChatMessage(PacketEvent.PacketReceiveEvent event) {
         if (!(event.packet() instanceof GameMessageS2CPacket(Text content, boolean overlay))) return;
         if (content == null || overlay) return;
