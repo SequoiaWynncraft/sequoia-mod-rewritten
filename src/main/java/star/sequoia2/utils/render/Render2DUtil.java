@@ -30,7 +30,6 @@ public class Render2DUtil implements TextRendererAccessor {
     public static Vec3d lastCameraPos;
     private static Float lastYaw = null;
     private static Float lastPitch = null;
-    private float fovMultiplier = 1.0F;
     private final Matrix4f cachedViewMatrix = new Matrix4f();
     private final Matrix4f cachedProjectionMatrix = new Matrix4f();
 
@@ -88,27 +87,23 @@ public class Render2DUtil implements TextRendererAccessor {
         return new Matrix4f().lookAt(position, target, up);
     }
 
-    public void updateFov() {
-        float targetFovMult = 1.0F;
-        if (mc.cameraEntity instanceof AbstractClientPlayerEntity entity) {
-            targetFovMult = entity.getFovMultiplier(mc.options.getPerspective().isFirstPerson(), mc.options.getFovEffectScale().getValue().floatValue());
-        }
-        float smoothingFactor = 0.01F;
-        fovMultiplier += (targetFovMult - fovMultiplier) * smoothingFactor;
-    }
-
     public void render2DAtWorldPos(DrawContext context, double worldX, double worldY, double worldZ, float tickdelta, float scale, boolean behind, RenderCallback renderAction) {
         if (mc.cameraEntity == null) return;
         Matrix4f view = getViewMatrixFromEntity(mc.player, tickdelta);
         cachedViewMatrix.set(view);
-        updateFov();
-        cachedProjectionMatrix.setPerspective((float) Math.toRadians(mc.options.getFov().getValue() * fovMultiplier), (float) mc.getWindow().getWidth() / mc.getWindow().getHeight(), 0.1f, 64000000f);
-        Vector2f screenPos = worldToScreen(new Vector3f((float) worldX, (float) worldY, (float) worldZ), cachedViewMatrix, cachedProjectionMatrix, mc.getWindow().getFramebufferWidth(), mc.getWindow().getFramebufferHeight(), behind);
+        float fov = mc.gameRenderer.getFov(mc.gameRenderer.getCamera(), tickdelta, true);
+        cachedProjectionMatrix.setPerspective(
+                (float) Math.toRadians(fov),
+                (float) mc.getWindow().getScaledWidth() / mc.getWindow().getScaledHeight(),
+                0.1f,
+                64000000f
+        );
+        Vector2f screenPos = worldToScreen(new Vector3f((float) worldX, (float) worldY, (float) worldZ), cachedViewMatrix, cachedProjectionMatrix, mc.getWindow().getScaledWidth(), mc.getWindow().getScaledHeight(), behind);
         if (screenPos == null) return;
         MatrixStack matrices = context.getMatrices();
         matrices.push();
         matrices.scale(scale, scale, scale);
-        renderAction.handleRender((screenPos.getX() / scale) / 2, (screenPos.getY() / scale) / 2);
+        renderAction.handleRender((screenPos.getX() / scale), (screenPos.getY() / scale));
         matrices.pop();
     }
 
@@ -395,11 +390,11 @@ public class Render2DUtil implements TextRendererAccessor {
                     Math.min(255, Math.max(0, (int) (a * baseColor.getAlpha()))));
 
             roundRectFilled(
-                ctx.getMatrices(),
-                x1 - expand, y1 - expand,
-                x2 + expand, y2 + expand,
+                    ctx.getMatrices(),
+                    x1 - expand, y1 - expand,
+                    x2 + expand, y2 + expand,
                     radius + expand * 0.6f,
-                c
+                    c
             );
         }
 
@@ -433,11 +428,11 @@ public class Render2DUtil implements TextRendererAccessor {
         return new float[]{r, g, b, a};
     }
 
-    public void enableScissor(int x, int y, int x2, int y2) {
-        setScissor(ClickGUIScreen.SCISSOR_STACK.push(new ScreenRect(x, y, x2 - x, y2 - y)));
-    }
-
-    public void disableScissor() { setScissor(ClickGUIScreen.SCISSOR_STACK.pop()); }
+//    public void enableScissor(int x, int y, int x2, int y2) {
+//        setScissor(ClickGUIScreen.SCISSOR_STACK.push(new ScreenRect(x, y, x2 - x, y2 - y)));
+//    }
+//
+//    public void disableScissor() { setScissor(ClickGUIScreen.SCISSOR_STACK.pop()); }
 
     private void setScissor(ScreenRect rect) {
         if (rect != null) {
