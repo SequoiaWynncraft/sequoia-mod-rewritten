@@ -96,7 +96,7 @@ public class Settings extends Feature implements NotificationsAccessor {
 
     @Subscribe
     public void onKeyDown(KeyEvent event) {
-        if (event.isKeyDown() && this.menuKeybind.get().matches(event) && mc.currentScreen == null) {
+        if (!event.isKeyDown() && this.menuKeybind.get().matches(event) && mc.currentScreen == null) {
             event.cancel();
             clickGui = new ClickGUIScreen();
             mc.setScreen(clickGui);
