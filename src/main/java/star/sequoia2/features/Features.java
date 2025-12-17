@@ -69,13 +69,11 @@ public class Features implements EventBusAccessor {
     @Subscribe
     private void onKeyDown(KeyEvent event) {
         if (event.key() <= 0) return;
-        if (mc.currentScreen != null || mc.inGameHud.getChatHud().isChatFocused()) {
-            return;
-        }
+        if (mc.currentScreen != null || mc.inGameHud.getChatHud().isChatFocused()) return;
 
         all().forEach(feature -> {
             if (feature instanceof ToggleFeature toggleFeature) {
-                if (event.isKeyDown() && toggleFeature.keybind.get().matches(event) && event.action() != GLFW.GLFW_RELEASE) {
+                if (!event.isKeyDown() && toggleFeature.keybind.get().matches(event) && event.action() != GLFW.GLFW_RELEASE) {
                     toggleFeature.toggle();
                 }
                 if (!event.isKeyDown() && toggleFeature.keybind.get().matches(event) && event.action() == GLFW.GLFW_RELEASE && !toggleFeature.keybind.getToggle()) {
@@ -87,15 +85,10 @@ public class Features implements EventBusAccessor {
 
     @Subscribe
     private void onMouseKey(MouseButtonEvent event) {
-        if (mc.currentScreen != null
-                || mc.inGameHud.getChatHud().isChatFocused()) {
-            return;
-        }
+        if (mc.currentScreen != null || mc.inGameHud.getChatHud().isChatFocused()) return;
         all().forEach(feature -> {
             if (feature instanceof ToggleFeature toggleFeature) {
-                if (!toggleFeature.keybind.get().matches(event)) {
-                    return;
-                }
+                if (!toggleFeature.keybind.get().matches(event)) return;
                 if (event.action() == GLFW.GLFW_PRESS) {
                     toggleFeature.toggle();
                 } else if (event.action() == GLFW.GLFW_RELEASE && !toggleFeature.keybind.getToggle()) {

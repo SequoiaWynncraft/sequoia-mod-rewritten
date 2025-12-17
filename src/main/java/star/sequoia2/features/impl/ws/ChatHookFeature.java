@@ -1,5 +1,6 @@
 package star.sequoia2.features.impl.ws;
 
+import com.collarmc.pounce.Preference;
 import com.collarmc.pounce.Subscribe;
 import net.minecraft.network.packet.s2c.play.ChatMessageS2CPacket;
 import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
@@ -98,7 +99,7 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
                 }
             });
 
-    @Subscribe
+    @Subscribe(value = Preference.MAIN, priority = 1)
     public void onChatMessage(PacketEvent.PacketReceiveEvent event) {
         if (!(event.packet() instanceof GameMessageS2CPacket(Text content, boolean overlay))) return;
         if (content == null || overlay) return;

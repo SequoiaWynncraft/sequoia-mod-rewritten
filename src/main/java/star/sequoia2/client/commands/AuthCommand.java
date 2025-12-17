@@ -3,7 +3,6 @@ package star.sequoia2.client.commands;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.CommandNode;
-import com.wynntils.core.components.Managers;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.MinecraftClient;
@@ -16,6 +15,7 @@ import star.sequoia2.client.types.command.Command;
 import star.sequoia2.client.types.ws.message.ws.GAuthWSMessage;
 import star.sequoia2.features.impl.ws.WebSocketFeature;
 import star.sequoia2.utils.wynn.WynnUtils;
+import star.sequoia2.utils.TickScheduler;
 
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -87,7 +87,7 @@ public class AuthCommand extends Command implements FeaturesAccessor, Notificati
                                 .sendFeedback(
                                         prefixed(Text.translatable("sequoia.command.auth.authenticating")));
 
-                        Managers.TickScheduler.scheduleLater(() -> sentGAuthWSMessage = false, 20 * 10);
+                        TickScheduler.scheduleTicks(() -> sentGAuthWSMessage = false, 20 * 10);
 
 
                     }));

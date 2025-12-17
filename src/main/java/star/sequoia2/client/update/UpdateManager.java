@@ -57,6 +57,7 @@ public final class UpdateManager {
             SeqClient.debug("Skipping update check: mod jar not resolved (likely dev environment).");
             return;
         }
+        processAppliedMarker();
         cleanupBackup();
         if (!autoCheckQueued.compareAndSet(false, true)) return;
         SeqClient.SCHEDULER.schedule(UpdateManager::waitForWorldThenCheck, 5, TimeUnit.SECONDS);
@@ -231,44 +232,73 @@ public final class UpdateManager {
         source.reply("Downloading " + release.channel().displayName() + " build " + release.displayVersion() + "...", Formatting.AQUA);
 
         CompletableFuture
-                .runAsync(() -> downloadAndReplace(modJarPath, modsDir, release))
+                .runAsync(() -> downloadAndScheduleInstall(modJarPath, modsDir, release))
                 .whenComplete((unused, throwable) -> {
                     installing.set(false);
                     if (throwable != null) {
                         source.reply("Update failed: " + throwable.getMessage(), Formatting.RED);
                     } else {
-                        source.reply("Update installed. Please restart Minecraft to load the new version.", Formatting.GREEN);
+                        source.reply("Update downloaded. It will be applied on game exit.", Formatting.GREEN);
                     }
                 });
     }
 
-    private static void downloadAndReplace(Path modJarPath, Path modsDir, ReleaseInfo release) {
+    public static void forceInstall(ReleaseInfo release, FabricClientCommandSourceBridge source) {
+        if (!installing.compareAndSet(false, true)) {
+            source.reply("An installation is already in progress.", Formatting.YELLOW);
+            return;
+        }
+
+        if (release == null) {
+            installing.set(false);
+            source.reply("No release information available. Run /sequpdate first.", Formatting.RED);
+            return;
+        }
+
+        if (SeqClient.getModJar() == null) {
+            installing.set(false);
+            source.reply("Unable to determine mod jar location. Automatic install is unavailable in this environment.", Formatting.RED);
+            return;
+        }
+
+        Path modJarPath = SeqClient.getModJar().toPath();
+        Path modsDir = modJarPath.getParent();
+
+        source.reply("Forcing download of " + release.channel().displayName() + " build " + release.displayVersion() + "...", Formatting.AQUA);
+
+        CompletableFuture
+                .runAsync(() -> downloadAndScheduleInstall(modJarPath, modsDir, release, true))
+                .whenComplete((unused, throwable) -> {
+                    installing.set(false);
+                    if (throwable != null) {
+                        source.reply("Update failed: " + throwable.getMessage(), Formatting.RED);
+                    } else {
+                        source.reply("Update downloaded (forced). It will be applied on game exit.", Formatting.GREEN);
+                    }
+                });
+    }
+
+    private static final AtomicBoolean shutdownHookAdded = new AtomicBoolean(false);
+
+    private static void downloadAndScheduleInstall(Path modJarPath, Path modsDir, ReleaseInfo release) {
+        downloadAndScheduleInstall(modJarPath, modsDir, release, false);
+    }
+
+    private static void downloadAndScheduleInstall(Path modJarPath, Path modsDir, ReleaseInfo release, boolean forceHelper) {
         Path temp = null;
-        Path backup = modJarPath.resolveSibling(modJarPath.getFileName().toString() + ".bak");
-        boolean backupCreated = false;
         try {
-            temp = Files.createTempFile(modsDir, "seq-update", ".jar");
+            Path updatesDir = SeqClient.getModStorageDir("updates").toPath();
+            Files.createDirectories(updatesDir);
+            Path pending = updatesDir.resolve("seq-update.jar");
+            Path meta = updatesDir.resolve("seq-update.meta");
+
+            temp = Files.createTempFile(updatesDir, "seq-update", ".jar");
             downloadFile(release.downloadUrl(), temp);
 
-            if (Files.exists(modJarPath)) {
-                try {
-                    Files.copy(modJarPath, backup, StandardCopyOption.REPLACE_EXISTING);
-                    backupCreated = true;
-                } catch (IOException ignored) {
-                    SeqClient.warn("Could not create backup for " + modJarPath);
-                }
-            }
-
-            Files.move(temp, modJarPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-            if (backupCreated) {
-                try {
-                    Files.deleteIfExists(backup);
-                } catch (IOException ignored) {
-                    SeqClient.warn("Failed to delete backup " + backup);
-                }
-            }
-            UPDATE_STATE.save(release.channel(), release.tag(), release.signature());
-            SeqClient.info("Sequoia updated to " + release.displayVersion());
+            Files.move(temp, pending, StandardCopyOption.REPLACE_EXISTING);
+            writeMeta(meta, release);
+            registerShutdownHook(modJarPath, pending, meta, release, forceHelper);
+            SeqClient.info("Update downloaded to " + pending + "; will install on shutdown.");
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage(), e);
         } finally {
@@ -280,8 +310,103 @@ public final class UpdateManager {
         }
     }
 
+    private static void registerShutdownHook(Path modJarPath, Path pending, Path meta, ReleaseInfo release) {
+        registerShutdownHook(modJarPath, pending, meta, release, false);
+    }
+
+    private static void registerShutdownHook(Path modJarPath, Path pending, Path meta, ReleaseInfo release, boolean forceHelper) {
+        if (!shutdownHookAdded.compareAndSet(false, true)) return;
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                if (!Files.exists(pending)) {
+                    SeqClient.warn("Pending update not found; skipping install.");
+                    return;
+                }
+                if (isWindows() || forceHelper) {
+                    launchWindowsHelper(modJarPath, pending, meta);
+                    return;
+                }
+                Path backup = modJarPath.resolveSibling(modJarPath.getFileName().toString() + ".bak");
+                try {
+                    Files.copy(modJarPath, backup, StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException ignored) {
+                    SeqClient.warn("Could not create backup for " + modJarPath);
+                }
+
+                Files.copy(pending, modJarPath, StandardCopyOption.REPLACE_EXISTING);
+                Files.deleteIfExists(pending);
+                UPDATE_STATE.save(release.channel(), release.tag(), release.signature());
+                SeqClient.info("Applied Sequoia update " + release.displayVersion() + " on shutdown.");
+
+                try {
+                    Files.deleteIfExists(backup);
+                } catch (IOException ignored) {
+                    SeqClient.warn("Failed to delete backup " + backup);
+                }
+            } catch (Exception ex) {
+                SeqClient.warn("Failed to apply pending update on shutdown: " + ex.getMessage(), ex);
+            }
+        }, "SeqUpdateShutdownHook"));
+    }
+
+    private static void launchWindowsHelper(Path modJarPath, Path pending, Path meta) {
+        try {
+            Path updatesDir = pending.getParent();
+            if (updatesDir == null) return;
+            Path applied = updatesDir.resolve("seq-update.applied");
+            Files.deleteIfExists(applied);
+
+            Path helperJar = updatesDir.resolve("seq-update-helper.jar");
+            try {
+                Files.copy(modJarPath, helperJar, StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException ex) {
+                SeqClient.warn("Failed to prepare helper jar: " + ex.getMessage(), ex);
+                return;
+            }
+
+            String javaExe = resolveJavaExecutable();
+            ProcessBuilder pb = new ProcessBuilder(
+                    javaExe,
+                    "-cp",
+                    helperJar.toString(),
+                    UpdateApplier.class.getName(),
+                    modJarPath.toString(),
+                    pending.toString(),
+                    meta.toString(),
+                    applied.toString(),
+                    helperJar.toString()
+            );
+            pb.inheritIO().start();
+            SeqClient.info("Launched external update helper to swap jar after exit: " + helperJar);
+        } catch (Exception ex) {
+            SeqClient.warn("Failed to launch Windows update helper: " + ex.getMessage(), ex);
+        }
+    }
+
+    private static String resolveJavaExecutable() {
+        String javaHome = System.getProperty("java.home");
+        if (javaHome != null) {
+            Path javaBin = Path.of(javaHome, "bin", "java.exe");
+            if (Files.exists(javaBin)) {
+                return javaBin.toString();
+            }
+        }
+        return "java";
+    }
+
+    private static void writeMeta(Path meta, ReleaseInfo release) {
+        try {
+            String content = release.channel().name() + "\n" + release.tag() + "\n" + release.signature();
+            Files.writeString(meta, content);
+        } catch (IOException e) {
+            SeqClient.warn("Failed to write update metadata: " + e.getMessage(), e);
+        }
+    }
+
     private static void downloadFile(String downloadUrl, Path target) throws IOException {
         HttpURLConnection connection = (HttpURLConnection) new URL(downloadUrl).openConnection();
+        connection.setConnectTimeout(30_000);
+        connection.setReadTimeout(500_000);
         connection.setRequestProperty("Accept", "application/octet-stream");
         int status = connection.getResponseCode();
         if (status >= 400) {
@@ -314,6 +439,41 @@ public final class UpdateManager {
         try {
             Files.deleteIfExists(backup);
         } catch (IOException ignored) {}
+    }
+
+    private static void processAppliedMarker() {
+        if (SeqClient.getModJar() == null) return;
+        Path updatesDir = SeqClient.getModStorageDir("updates").toPath();
+        Path applied = updatesDir.resolve("seq-update.applied");
+        if (!Files.exists(applied)) return;
+        try {
+            var lines = Files.readAllLines(applied);
+            if (lines.size() >= 3) {
+                String channelName = lines.get(0).trim();
+                String tag = lines.get(1).trim();
+                String signature = lines.get(2).trim();
+                UpdateChannel channel;
+                try {
+                    channel = UpdateChannel.valueOf(channelName);
+                } catch (IllegalArgumentException ex) {
+                    channel = UpdateChannel.STABLE;
+                }
+                UPDATE_STATE.save(channel, tag, signature);
+                SeqClient.info("Detected completed update (" + channel.displayName() + " " + tag + ") applied externally.");
+                NOTIFIER.notify(Text.literal("Applied update: " + channel.displayName() + " " + tag + " (external helper)").formatted(Formatting.GREEN));
+            }
+        } catch (Exception ex) {
+            SeqClient.warn("Failed to read applied update marker: " + ex.getMessage(), ex);
+        } finally {
+            try {
+                Files.deleteIfExists(applied);
+            } catch (IOException ignored) {}
+        }
+    }
+
+    private static boolean isWindows() {
+        String os = System.getProperty("os.name", "").toLowerCase();
+        return os.contains("win");
     }
 
     public interface FabricClientCommandSourceBridge {

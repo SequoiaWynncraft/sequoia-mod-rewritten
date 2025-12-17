@@ -8,6 +8,6 @@ import org.lwjgl.glfw.GLFW;
 @EventInfo(preference = Preference.CALLER)
 public record KeyEvent(long window, int key, int scancode, int action, int modifiers) implements Cancelable {
     public boolean isKeyDown() {
-        return action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT;
+        return action == GLFW.GLFW_REPEAT;
     }
 }

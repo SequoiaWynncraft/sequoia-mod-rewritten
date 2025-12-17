@@ -3,7 +3,6 @@ package star.sequoia2.client.commands;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.CommandNode;
-import com.wynntils.core.components.Managers;
 import java.util.Optional;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
@@ -15,6 +14,7 @@ import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.types.command.Command;
 import star.sequoia2.features.impl.ws.WebSocketFeature;
 import star.sequoia2.utils.wynn.WynnUtils;
+import star.sequoia2.utils.TickScheduler;
 
 import static star.sequoia2.client.SeqClient.mc;
 
@@ -124,15 +124,13 @@ public class SeqConnectCommand extends Command implements FeaturesAccessor, Noti
                             .sendFeedback(
                                     prefixed(Text.translatable("sequoia.command.connect.connecting")));
                     wsFeature.ifPresent(WebSocketFeature::connectIfNeeded);
-                    Managers.TickScheduler.scheduleLater(
-                            () -> {
-                                if (!wsFeature.map(webSocketFeature -> webSocketFeature.getClient().isOpen()).orElse(false)) {
-                                    ctx.getSource()
-                                            .sendError(prefixed(
-                                                    Text.translatable("sequoia.command.connect.failedToConnect")));
-                                }
-                            },
-                            20 * 10);
+                    TickScheduler.scheduleTicks(() -> {
+                        if (!wsFeature.map(webSocketFeature -> webSocketFeature.getClient().isOpen()).orElse(false)) {
+                            ctx.getSource()
+                                    .sendError(prefixed(
+                                            Text.translatable("sequoia.command.connect.failedToConnect")));
+                        }
+                    }, 20 * 10);
                 }));
 
         return 1;

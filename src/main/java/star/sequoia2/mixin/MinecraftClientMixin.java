@@ -6,11 +6,19 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import star.sequoia2.accessors.EventBusAccessor;
+import star.sequoia2.events.EventStage;
 import star.sequoia2.events.MinecraftFinishedLoading;
 import star.sequoia2.events.ScreenOpenedEvent;
+import star.sequoia2.events.TickEvent;
 
 @Mixin(MinecraftClient.class)
 public class MinecraftClientMixin implements EventBusAccessor {
+
+    @Inject(at = @At("HEAD"), method = "tick")
+    private void onPreTick(CallbackInfo info) {
+        dispatch(new TickEvent(EventStage.PRE));
+    }
+
     @Inject(method = "<init>", at = @At("TAIL"))
     private void onInit(CallbackInfo ci) {
         dispatch(new MinecraftFinishedLoading());

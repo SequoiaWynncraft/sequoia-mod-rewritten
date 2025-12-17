@@ -3,7 +3,6 @@ package star.sequoia2.client.commands;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.CommandNode;
-import com.wynntils.core.components.Managers;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.resource.language.I18n;
@@ -16,6 +15,7 @@ import star.sequoia2.client.types.command.Command;
 import star.sequoia2.client.types.command.suggestions.SuggestionProviders;
 import star.sequoia2.features.impl.ws.WebSocketFeature;
 import star.sequoia2.utils.wynn.WynnUtils;
+import star.sequoia2.utils.TickScheduler;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -96,22 +96,20 @@ public class SeqDisconnectCommand extends Command implements FeaturesAccessor, N
 
                             );
                     wsFeature.ifPresent(WebSocketFeature::closeIfNeeded);
-                    Managers.TickScheduler.scheduleLater(
-                            () -> {
-                                if (wsFeature.map(webSocketFeature -> webSocketFeature.getClient().isClosed()).orElse(true)) {
-                                    ctx.getSource()
-                                            .sendFeedback(
-                                                    prefixed(
-                                                            Text.translatable("sequoia.command.disconnect.disconnected"))
-                                            );
-                                    return;
-                                }
+                    TickScheduler.scheduleTicks(() -> {
+                        if (wsFeature.map(webSocketFeature -> webSocketFeature.getClient().isClosed()).orElse(true)) {
+                            ctx.getSource()
+                                    .sendFeedback(
+                                            prefixed(
+                                                    Text.translatable("sequoia.command.disconnect.disconnected"))
+                                    );
+                            return;
+                        }
 
-                                ctx.getSource()
-                                        .sendError(prefixed(
-                                                Text.translatable("sequoia.command.disconnect.failedToDisconnect")));
-                            },
-                            5);
+                        ctx.getSource()
+                                .sendError(prefixed(
+                                        Text.translatable("sequoia.command.disconnect.failedToDisconnect")));
+                    }, 5);
                 }));
     }
 

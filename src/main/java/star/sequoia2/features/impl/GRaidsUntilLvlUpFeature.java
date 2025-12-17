@@ -1,5 +1,6 @@
 package star.sequoia2.features.impl;
 
+import com.collarmc.pounce.Preference;
 import com.collarmc.pounce.Subscribe;
 import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
 import net.minecraft.text.PlainTextContent;
@@ -58,7 +59,7 @@ public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserA
         return !t.isEmpty();
     }
 
-    @Subscribe
+    @Subscribe(value = Preference.CALLER, priority = 2)
     public void onChatMessage(PacketEvent.PacketReceiveEvent event) {
         if (!(event.packet() instanceof GameMessageS2CPacket(Text content, boolean overlay))) return;
         if (content == null || overlay) return;
