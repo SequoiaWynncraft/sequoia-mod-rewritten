@@ -7,7 +7,7 @@ import star.sequoia2.client.types.ws.message.ws.guildraid.GGuildRaidWSMessage;
 import star.sequoia2.client.types.ws.message.ws.guildraid.GuildRaid;
 import star.sequoia2.client.types.ws.message.ws.guildraid.RaidType;
 import star.sequoia2.events.RaidCompleteFromChatEvent;
-import star.sequoia2.features.impl.ws.WebSocketFeature;
+import star.sequoia2.features.impl.ws.WebSocket;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -18,7 +18,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static star.sequoia2.client.SeqClient.mc;
-import static star.sequoia2.features.impl.ws.ChatHookFeature.remove_formatting;
+import static star.sequoia2.features.impl.ws.ChatHook.remove_formatting;
 import static star.sequoia2.utils.cache.SequoiaMemberCache.isSequoiaMember;
 
 public class GuildRaidParser implements FeaturesAccessor, EventBusAccessor {
@@ -111,9 +111,9 @@ public class GuildRaidParser implements FeaturesAccessor, EventBusAccessor {
                             type, players, reporter, aspects, emeralds, xp, sr
                     );
             dispatch(new RaidCompleteFromChatEvent());
-            Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
-            if (wsFeature.map(WebSocketFeature::isActive).orElse(false)
-                    && wsFeature.map(WebSocketFeature::isAuthenticated).orElse(false)) {
+            Optional<WebSocket> wsFeature = features().getIfActive(WebSocket.class);
+            if (wsFeature.map(WebSocket::isActive).orElse(false)
+                    && wsFeature.map(WebSocket::isAuthenticated).orElse(false)) {
                 wsFeature.ifPresent(webSocketFeature -> webSocketFeature.sendMessage(new GGuildRaidWSMessage(payload)));
             }
 

@@ -23,9 +23,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static star.sequoia2.client.SeqClient.mc;
-import static star.sequoia2.features.impl.ws.ChatHookFeature.remove_multiline;
+import static star.sequoia2.features.impl.ws.ChatHook.remove_multiline;
 
-public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserAccessor, EventBusAccessor {
+public class GRaidsUntilLvlUp extends ToggleFeature implements TeXParserAccessor, EventBusAccessor {
     private final Deque<PendingRaid> pendingRaids = new ConcurrentLinkedDeque<>();
 
     private boolean suppressNextGuStats = false;
@@ -40,8 +40,8 @@ public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserA
 
     private static final Pattern SECTION_CODES = Pattern.compile("§[0-9a-fk-or<>]", Pattern.CASE_INSENSITIVE);
 
-    public GRaidsUntilLvlUpFeature() {
-        super("Guild raid completion levelup progress", "Shows you the amount of graids that are needed to reach the next guild level.", true);
+    public GRaidsUntilLvlUp() {
+        super("GRaidsUntilLvlUp", "Raids till levelup in raid comp message");
     }
 
     public static int calculateNeededRaids(long current, long needed, long xpPerRaid) {
@@ -80,7 +80,7 @@ public class GRaidsUntilLvlUpFeature extends ToggleFeature implements TeXParserA
             event.cancel();
             return;
         }
-        if (expectGuStats && GRaidsUntilLvlUpFeature.isGuStatsHeader(content)) {
+        if (expectGuStats && GRaidsUntilLvlUp.isGuStatsHeader(content)) {
             suppressNextGuStats = true;
             expectGuStats = false;
             statsRequestAtMs = 0L;

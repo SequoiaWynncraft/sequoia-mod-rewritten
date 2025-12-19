@@ -49,7 +49,7 @@ public class DummyCommand extends Command implements TeXParserAccessor {
 //                GIC3HWSMessage.opCodes.INVALID.getValue(), 0, "", payload, List.of("fe44e5b2-e31c-4c3c-8806-b065bf437411")
 //        );
 //        GIC3HWSMessage gIC3HWSMessage = new GIC3HWSMessage(data);
-//        Managers.Feature.getFeatureInstance(WebSocketFeature.class).sendMessage(gIC3HWSMessage);
+//        Managers.Feature.getFeatureInstance(WebSocket.class).sendMessage(gIC3HWSMessage);
         ctx.getSource().sendFeedback(teXParser().parseMutableText(ctx.getArgument("text", String.class)));
         return 1;
     }

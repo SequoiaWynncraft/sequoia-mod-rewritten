@@ -22,7 +22,7 @@ import star.sequoia2.client.types.ws.message.ws.GTreasuryEmeraldAlertWSMessage;
 import star.sequoia2.events.PacketEvent;
 import star.sequoia2.events.RaidCompleteFromChatEvent;
 import star.sequoia2.features.ToggleFeature;
-import star.sequoia2.features.impl.ws.WebSocketFeature;
+import star.sequoia2.features.impl.ws.WebSocket;
 import star.sequoia2.settings.types.BooleanSetting;
 import star.sequoia2.settings.types.IntSetting;
 import star.sequoia2.utils.wynn.WynnUtils;
@@ -31,14 +31,13 @@ import java.util.HashMap;
 import java.util.Optional;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static star.sequoia2.client.SeqClient.mc;
 
-public class GuildRewardTrackingFeature extends ToggleFeature {
+public class GuildRewardTracking extends ToggleFeature {
     private static final int GUILD_REWARDS_ITEM_SLOT = 27;
     private static final Pattern GUILD_REWARDS_EMERALDS_PATTERN = Pattern.compile("^§aEmeralds: §f(\\d+)§7/(\\d+)$");
     private static final Pattern GUILD_REWARDS_TOMES_PATTERN = Pattern.compile("^§5Guild Tomes: §f(\\d+)§7/(\\d+)$");
@@ -51,8 +50,8 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
             "\\uDAFF\\uDFFC\\uE001\\uDB00\\uDC06\\s+(?:§.)*([\\p{L}\\p{N}_]+)\\s+rewarded\\s+((?:§.|[^§])+?)\\s+to\\s+(?:§.)*([\\p{L}\\p{N}_]+)",
             Pattern.CASE_INSENSITIVE
     );
-    public GuildRewardTrackingFeature() {
-        super("GuildRewardTrackingFeature", "Tracks and notifies when guild rewards are over a certain point.");
+    public GuildRewardTracking() {
+        super("GuildRewardTracking", "Tracks and notifies when guild rewards are over a certain point.");
     }
 
     @Getter
@@ -68,8 +67,8 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
 
     @Subscribe
     private void cancelPing(PacketEvent.PacketReceiveEvent event) {
-        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
-        if (!wsFeature.map(WebSocketFeature::isActive).orElse(false)) return;
+        Optional<WebSocket> wsFeature = features().getIfActive(WebSocket.class);
+        if (!wsFeature.map(WebSocket::isActive).orElse(false)) return;
         if (!(event.packet() instanceof GameMessageS2CPacket packet) || packet.overlay()) return;
 
         String raw = packet.content().toString();
@@ -101,7 +100,7 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
 
     public void processGuildRewards() {
         SeqClient.debug("Starting to parse guild rewards");
-        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
+        Optional<WebSocket> wsFeature = features().getIfActive(WebSocket.class);
 
         checkGuildRewards().thenAcceptAsync(rewardStorage -> {
                     if (rewardStorage == null){return;}
@@ -123,7 +122,7 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
                     }
 
                     if(emeraldValue>= 90 && sendPing.get()){
-                        if (!wsFeature.map(WebSocketFeature::isActive).orElse(false)) return;
+                        if (!wsFeature.map(WebSocket::isActive).orElse(false)) return;
                         GTreasuryEmeraldAlertWSMessage payload = new GTreasuryEmeraldAlertWSMessage(
                                 new GTreasuryEmeraldAlertWSMessage.Data(
                                         true,

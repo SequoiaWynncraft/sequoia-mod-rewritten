@@ -6,7 +6,7 @@ import star.sequoia2.accessors.TeXParserAccessor;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.types.ws.handler.WSMessageHandler;
 import star.sequoia2.client.types.ws.message.ws.SChannelMessageWSMessage;
-import star.sequoia2.features.impl.ws.DiscordChatBridgeFeature;
+import star.sequoia2.features.impl.ws.DiscordChatBridge;
 
 import java.util.List;
 
@@ -23,8 +23,8 @@ public class SChannelMessageWSMessageHandler extends WSMessageHandler implements
     @Override
     public void handle() {
         SeqClient.debug(wsMessage.toString());
-        if (features().getIfActive(DiscordChatBridgeFeature.class).map(DiscordChatBridgeFeature::isActive).orElse(false)
-                && features().getIfActive(DiscordChatBridgeFeature.class).map(discordChatBridgeFeature -> discordChatBridgeFeature.getSendDiscordMessageToChat().get()).orElse(false)) {
+        if (features().getIfActive(DiscordChatBridge.class).map(DiscordChatBridge::isActive).orElse(false)
+                && features().getIfActive(DiscordChatBridge.class).map(discordChatBridge -> discordChatBridge.getSendDiscordMessageToChat().get()).orElse(false)) {
             SChannelMessageWSMessage sChannelMessageWSMessage = (SChannelMessageWSMessage) wsMessage;
             SChannelMessageWSMessage.Data d = sChannelMessageWSMessage.getSChannelMessageData();
             String name = d.displayName() == null ? "" : d.displayName();

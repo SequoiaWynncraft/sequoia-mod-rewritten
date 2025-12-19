@@ -16,6 +16,7 @@ import star.sequoia2.gui.component.SearchBarComponent;
 import star.sequoia2.gui.screen.GuiRoot;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class FeaturesCategory extends RelativeComponent implements RenderUtilAccessor, FeaturesAccessor, TextRendererAccessor, SettingsAccessor {
@@ -29,10 +30,10 @@ public class FeaturesCategory extends RelativeComponent implements RenderUtilAcc
 
     public FeaturesCategory() {
         super("Features");
-        for (Feature feature : features().all().toList()) {
-            if (feature.getName().equals("Settings")) continue;
-            moduleButtons.add(new ModuleButton(feature));
-        }
+        features().all()
+                .filter(feature -> !feature.getName().equals("Settings"))
+                .sorted(Comparator.comparing(Feature::getName, String.CASE_INSENSITIVE_ORDER))
+                .forEach(feature -> moduleButtons.add(new ModuleButton(feature)));
         searchBarComponent = new SearchBarComponent();
     }
 

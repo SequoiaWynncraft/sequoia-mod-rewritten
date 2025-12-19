@@ -12,13 +12,12 @@ import star.sequoia2.accessors.TeXParserAccessor;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.types.ws.handler.WSMessageHandler;
 import star.sequoia2.client.types.ws.message.ws.SMessageWSMessage;
-import star.sequoia2.features.impl.ws.WebSocketFeature;
+import star.sequoia2.features.impl.ws.WebSocket;
 import star.sequoia2.utils.URLUtils;
 
 import java.util.Optional;
 import java.util.regex.Matcher;
 
-import static star.sequoia2.client.SeqClient.mc;
 import static star.sequoia2.client.types.ws.WSConstants.GSON;
 import static star.sequoia2.utils.XMLUtils.extractTextFromXml;
 
@@ -29,7 +28,7 @@ public class SMessageWSMessageHandler extends WSMessageHandler implements Featur
 
     @Override
     public void handle() {
-        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
+        Optional<WebSocket> wsFeature = features().getIfActive(WebSocket.class);
         SMessageWSMessage sMessageWSMessage = (SMessageWSMessage) wsMessage;
         JsonElement sMessageWSMessageData = sMessageWSMessage.getData();
 
@@ -37,7 +36,7 @@ public class SMessageWSMessageHandler extends WSMessageHandler implements Featur
             String serverMessageText = sMessageWSMessageData.getAsString();
             if (StringUtils.equals(serverMessageText, "Invalid or expired token provided.\\nVisit https://api.sequoia.ooo/oauth2 to obtain a new session.")) {
                 SeqClient.debug("Received authentication required message, reauthenticating.");
-                wsFeature.ifPresent(WebSocketFeature::authenticate);
+                wsFeature.ifPresent(WebSocket::authenticate);
                 return;
             }
 

@@ -51,8 +51,6 @@ public class SorrowTracker extends ToggleFeature implements RenderUtilAccessor, 
     private final Timer timer;
     private final Timer sorrowTimer;
 
-    private boolean shouldRender = false;
-
     public SorrowTracker() {
         super("SorrowTracker", "Custom visuals for blood sorrow");
         timer = new Timer();

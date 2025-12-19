@@ -5,15 +5,13 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.CommandNode;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.text.Text;
 import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.accessors.NotificationsAccessor;
-import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.types.command.Command;
 import star.sequoia2.client.types.ws.message.ws.GAuthWSMessage;
-import star.sequoia2.features.impl.ws.WebSocketFeature;
+import star.sequoia2.features.impl.ws.WebSocket;
 import star.sequoia2.utils.wynn.WynnUtils;
 import star.sequoia2.utils.TickScheduler;
 
@@ -46,8 +44,8 @@ public class AuthCommand extends Command implements FeaturesAccessor, Notificati
     private int auth(CommandContext<FabricClientCommandSource> ctx) {
         String code = ctx.getArgument("code", String.class);
         if (CODE_PATTERN.matcher(code).matches()) {
-            Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
-            if (!wsFeature.map(WebSocketFeature::isActive).orElse(false)) {
+            Optional<WebSocket> wsFeature = features().getIfActive(WebSocket.class);
+            if (!wsFeature.map(WebSocket::isActive).orElse(false)) {
                             ctx.getSource()
                                     .sendError(
                                             prefixed(Text.translatable("sequoia.feature.webSocket.featureDisabled")));
@@ -62,7 +60,7 @@ public class AuthCommand extends Command implements FeaturesAccessor, Notificati
                             return;
                         }
 
-                        if (wsFeature.map(WebSocketFeature::isAuthenticated).orElse(false)) {
+                        if (wsFeature.map(WebSocket::isAuthenticated).orElse(false)) {
                             ctx.getSource()
                                     .sendError(
                                             prefixed(Text.translatable("sequoia.command.auth.alreadyAuthenticated")));
@@ -77,7 +75,7 @@ public class AuthCommand extends Command implements FeaturesAccessor, Notificati
                         }
 
                         if (!wsFeature.map(webSocketFeature -> webSocketFeature.getClient().isOpen()).orElse(false)) {
-                            wsFeature.ifPresent(WebSocketFeature::connectIfNeeded);
+                            wsFeature.ifPresent(WebSocket::connectIfNeeded);
                         }
 
                         GAuthWSMessage gAuthWSMessage = new GAuthWSMessage(code);

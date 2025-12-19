@@ -23,9 +23,9 @@ import java.util.regex.Pattern;
 
 import static star.sequoia2.client.SeqClient.mc;
 
-public class ChatHookFeature extends ToggleFeature implements GuildParserAccessor, TeXParserAccessor, EventBusAccessor {
+public class ChatHook extends ToggleFeature implements GuildParserAccessor, TeXParserAccessor, EventBusAccessor {
 
-    public ChatHookFeature() {
+    public ChatHook() {
         super("ChatHook", "Chat related stuffs (type shi)", true);
     }
 
@@ -49,16 +49,6 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
     private static final String NAME_TOK =
             "(?:\\\\hover\\{[^}]+}\\{§e(?:§o)?[^}]+}§b|§e[^§\\r\\n]+§b)";
 
-    // raid header
-    private static final Pattern GUILD_RAID_HEADER = Pattern.compile(
-            "^(?:§b)+\\s*"
-                    + NAME_TOK + "\\s*,\\s*"
-                    + NAME_TOK + "\\s*,\\s*"
-                    + NAME_TOK + "\\s*,\\s*and\\s*"
-                    + NAME_TOK + "\\s*$",
-            Pattern.DOTALL
-    );
-
 //    // allow any §-style code
 //    private static final String SEC = "§[0-9a-fk-or<>]";
 //
@@ -74,8 +64,6 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
 //    );
 
 
-    private static final String GUILD_RAID_PREFIX1 = "§b\uE006\uE002§b";
-    private static final String GUILD_RAID_PREFIX2 = "§b\uE001§b";
     // this actually works
     private static final Pattern GUILD_RAID_BLOCK = Pattern.compile("§b finished");
     private static final Pattern OTHER_GUILD_RAID_BLOCK = Pattern.compile("§b §bfinished");
@@ -110,9 +98,9 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
         if (AUTO_CONNECT.matcher(raw).find()) {
             SeqClient.debug("parsing as login...");
             dispatch(new WynncraftLoginEvent());
-            Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
-            boolean wsAuthenticated = wsFeature.map(WebSocketFeature::isAuthenticated).orElse(false);
-            if (wsFeature.map(WebSocketFeature::getConnectOnJoin).map(BooleanSetting::get).orElse(false)
+            Optional<WebSocket> wsFeature = features().getIfActive(WebSocket.class);
+            boolean wsAuthenticated = wsFeature.map(WebSocket::isAuthenticated).orElse(false);
+            if (wsFeature.map(WebSocket::getConnectOnJoin).map(BooleanSetting::get).orElse(false)
                     && !wsAuthenticated
                     && mc.player != null) {
                 mc.player.networkHandler.sendCommand("seqconnect");
@@ -120,13 +108,11 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
             return;
         }
 
-        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
-        Optional<ChatHookFeature> chatHookFeature = features().getIfActive(ChatHookFeature.class);
-        boolean wsEnabled = wsFeature.map(WebSocketFeature::isActive).orElse(false);
-        boolean wsAuthenticated = wsFeature.map(WebSocketFeature::isAuthenticated).orElse(false);
-        boolean hookActive = chatHookFeature.map(ChatHookFeature::isActive).orElse(false);
+        Optional<WebSocket> wsFeature = features().getIfActive(WebSocket.class);
+        boolean wsEnabled = wsFeature.map(WebSocket::isActive).orElse(false);
+        boolean wsAuthenticated = wsFeature.map(WebSocket::isAuthenticated).orElse(false);
 
-        if (!wsEnabled || !wsAuthenticated || !hookActive) {
+        if (!wsEnabled || !wsAuthenticated) {
             return;
         }
 
@@ -147,18 +133,6 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
             SeqClient.debug("parsing as guild raid completion...");
             guildRaidParser().parseGuildRaid(tex);
         }
-    }
-
-    private static String getString(ChatMessageS2CPacket messagePacket) {
-        Text message = messagePacket.unsignedContent();
-//            "[12:12:02] [Render thread/INFO] (sequoia2) [VERBOSE] [CHAT] §b\uDAFF\uDFFC\uE006\uDAFF\uDFFF\uE002\uDAFF\uDFFE §ebad_and_sad§b, §eMasss§b, §e§owar tank§b, and §e§oTotal Obliteration§b finished §3The Nameless §b\uDAFF\uDFFC\uE001\uDB00\uDC06§3 Anomaly§b and claimed §32x Aspects§b, §32048x §b\uDAFF\uDFFC\uE001\uDB00\uDC06§3 Emeralds§b, and §3+10367m Guild Experience\n"
-//            StyledText styledText = StyledText.fromComponent(message);
-//
-//            String tex = teXParser().toTeX(styledText.stripAlignment());
-//
-
-        String tex = message.toString();
-        return tex;
     }
 
     private static final Pattern SECTION_CODES =

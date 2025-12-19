@@ -15,7 +15,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import star.sequoia2.client.types.ws.message.ws.GGuildWarSubmissionWSMessage;
 import star.sequoia2.events.PlayerTickEvent;
 import star.sequoia2.features.ToggleFeature;
-import star.sequoia2.features.impl.ws.WebSocketFeature;
+import star.sequoia2.features.impl.ws.WebSocket;
 
 import static star.sequoia2.client.SeqClient.mc;
 
@@ -30,7 +30,7 @@ public class GuildWarTracker extends ToggleFeature {
     private int lastProcessedStateHash;
 
     public GuildWarTracker() {
-        super("GuildWarTracker", "Tracks guild war results and reports them to Sequoia services", true);
+        super("GuildWarTracker", "Tracks guild war results", true);
     }
 
     @Subscribe
@@ -104,9 +104,9 @@ public class GuildWarTracker extends ToggleFeature {
         WarSummary summary = buildSummary(info);
         if (summary == null) return;
 
-        WebSocketFeature webSocket = features().getIfActive(WebSocketFeature.class)
-                .filter(WebSocketFeature::isActive)
-                .filter(WebSocketFeature::isAuthenticated)
+        WebSocket webSocket = features().getIfActive(WebSocket.class)
+                .filter(WebSocket::isActive)
+                .filter(WebSocket::isAuthenticated)
                 .orElse(null);
         if (webSocket == null || mc.player == null) {
             return;

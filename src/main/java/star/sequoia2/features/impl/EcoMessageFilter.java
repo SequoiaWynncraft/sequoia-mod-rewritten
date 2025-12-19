@@ -11,16 +11,16 @@ import java.util.Locale;
 import static star.sequoia2.client.SeqClient.mc;
 
 public class EcoMessageFilter extends ToggleFeature {
-    // random comment
+
     public EcoMessageFilter() {
         super("EcoMessageFilter", "Filters eco messages in chat for Strat+");
     }
 
     @Subscribe
     public void cancelPackets(PacketEvent.PacketReceiveEvent event){
-        if (mc.player != null && event.packet() instanceof GameMessageS2CPacket packet){
-            if (!packet.overlay()){
-                if (containsEcoMessage(packet.content())){
+        if (mc.player != null && event.packet() instanceof GameMessageS2CPacket(Text content, boolean overlay)){
+            if (!overlay){
+                if (containsEcoMessage(content)){
                     event.cancel();
                 }
             }

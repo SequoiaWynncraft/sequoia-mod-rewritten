@@ -11,7 +11,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import org.slf4j.Logger;
-import star.sequoia2.Seq;
 import star.sequoia2.accessors.EventBusAccessor;
 import star.sequoia2.client.commands.Commands;
 import star.sequoia2.client.notifications.Notifications;
@@ -19,9 +18,9 @@ import star.sequoia2.configuration.Configuration;
 import star.sequoia2.events.MinecraftFinishedLoading;
 import star.sequoia2.features.Features;
 import star.sequoia2.features.impl.*;
-import star.sequoia2.features.impl.ws.ChatHookFeature;
-import star.sequoia2.features.impl.ws.DiscordChatBridgeFeature;
-import star.sequoia2.features.impl.ws.WebSocketFeature;
+import star.sequoia2.features.impl.ws.ChatHook;
+import star.sequoia2.features.impl.ws.DiscordChatBridge;
+import star.sequoia2.features.impl.ws.WebSocket;
 import star.sequoia2.gui.Fonts;
 import star.sequoia2.gui.categories.Categories;
 import star.sequoia2.settings.SettingsState;
@@ -184,14 +183,14 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
         features.add(new SorrowTracker());
         features.add(new TeleportIndicator());
         features.add(new PartyHealthDisplay());
-        features.add(new ChatHookFeature());
-        features.add(new DiscordChatBridgeFeature());
-        features.add(new WebSocketFeature());
+        features.add(new ChatHook());
+        features.add(new DiscordChatBridge());
+        features.add(new WebSocket());
         features.add(new EcoMessageFilter());
-        features.add(new GuildRewardTrackingFeature());
+        features.add(new GuildRewardTracking());
         features.add(new GuildRewardGranter());
         features.add(new GuildWarTracker());
-        features.add(new GRaidsUntilLvlUpFeature());
+        features.add(new GRaidsUntilLvlUp());
         //TODO: finish commented out features.
     }
 
