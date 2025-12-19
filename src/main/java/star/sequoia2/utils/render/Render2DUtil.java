@@ -6,13 +6,10 @@ import mil.nga.color.Color;
 import net.minecraft.client.gl.ShaderProgramKeys;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.ScreenRect;
-import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.client.option.Perspective;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.Window;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector2f;
-import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
@@ -21,15 +18,11 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import star.sequoia2.accessors.TextRendererAccessor;
-import star.sequoia2.gui.screen.ClickGUIScreen;
 
 import static star.sequoia2.client.SeqClient.mc;
 
 public class Render2DUtil implements TextRendererAccessor {
 
-    public static Vec3d lastCameraPos;
-    private static Float lastYaw = null;
-    private static Float lastPitch = null;
     private final Matrix4f cachedViewMatrix = new Matrix4f();
     private final Matrix4f cachedProjectionMatrix = new Matrix4f();
 
@@ -51,55 +44,38 @@ public class Render2DUtil implements TextRendererAccessor {
     public static double lerp(double previous, double current, double tickDelta) { return previous + (current - previous) * tickDelta; }
     public static float lerp(float previous, float current, float tickDelta) { return previous + (current - previous) * tickDelta; }
 
-    private Matrix4f getViewMatrixFromEntity(Entity entity, float tickDelta) {
-        if (lastCameraPos == null) lastCameraPos = mc.gameRenderer.getCamera().getPos();
-        double cameraInterpX = lerp(lastCameraPos.getX(), mc.gameRenderer.getCamera().getPos().getX(), tickDelta);
-        double cameraInterpY = lerp(lastCameraPos.getY(), mc.gameRenderer.getCamera().getPos().getY(), tickDelta);
-        double cameraInterpZ = lerp(lastCameraPos.getZ(), mc.gameRenderer.getCamera().getPos().getZ(), tickDelta);
-        lastCameraPos = mc.gameRenderer.getCamera().getPos();
-
-        float currentYaw = entity.getYaw();
-        float currentPitch = entity.getPitch();
-        if (lastYaw == null) lastYaw = currentYaw;
-        if (lastPitch == null) lastPitch = currentPitch;
-        float interpYaw = lerp(lastYaw, currentYaw, tickDelta);
-        float interpPitch = lerp(lastPitch, currentPitch, tickDelta);
-        lastYaw = currentYaw; lastPitch = currentPitch;
-        float safePitch = Math.max(-89.9f, Math.min(interpPitch, 89.9f));
-
-        Vector3f up = new Vector3f(0, 1, 0);
-        float yawRad = (float) Math.toRadians(interpYaw);
-        float pitchRad = (float) Math.toRadians(safePitch);
-        float forwardX = -(float) Math.cos(pitchRad) * (float) Math.sin(yawRad);
-        float forwardY = -(float) Math.sin(pitchRad);
-        float forwardZ = (float) Math.cos(pitchRad) * (float) Math.cos(yawRad);
-        Vector3f forward = new Vector3f(forwardX, forwardY, forwardZ);
-
-        Vector3f position;
-        Vector3f target;
-        if (mc.options.getPerspective() == Perspective.THIRD_PERSON_FRONT) {
-            position = new Vector3f((float) cameraInterpX, (float) cameraInterpY, (float) cameraInterpZ);
-            target = new Vector3f(position).sub(forward);
-        } else {
-            position = new Vector3f((float) cameraInterpX, (float) cameraInterpY, (float) cameraInterpZ);
-            target = new Vector3f(position).add(forward);
-        }
-        return new Matrix4f().lookAt(position, target, up);
-    }
-
     public void render2DAtWorldPos(DrawContext context, double worldX, double worldY, double worldZ, float tickdelta, float scale, boolean behind, RenderCallback renderAction) {
-        if (mc.cameraEntity == null) return;
-        Matrix4f view = getViewMatrixFromEntity(mc.player, tickdelta);
-        cachedViewMatrix.set(view);
-        float fov = mc.gameRenderer.getFov(mc.gameRenderer.getCamera(), tickdelta, true);
-        cachedProjectionMatrix.setPerspective(
+        if (mc.getCameraEntity() == null) return;
+
+        Camera cam = mc.gameRenderer.getCamera();
+        Vec3d camPos = cam.getPos();
+
+        float relX = (float) (worldX - camPos.x);
+        float relY = (float) (worldY - camPos.y);
+        float relZ = (float) (worldZ - camPos.z);
+
+        org.joml.Quaternionf q = new org.joml.Quaternionf(cam.getRotation());
+        q.conjugate();
+        cachedViewMatrix.identity().rotate(q);
+
+        float fov = mc.gameRenderer.getFov(cam, tickdelta, true);
+        cachedProjectionMatrix.identity().setPerspective(
                 (float) Math.toRadians(fov),
                 (float) mc.getWindow().getScaledWidth() / mc.getWindow().getScaledHeight(),
-                0.1f,
-                64000000f
+                0.05f,
+                4096f
         );
-        Vector2f screenPos = worldToScreen(new Vector3f((float) worldX, (float) worldY, (float) worldZ), cachedViewMatrix, cachedProjectionMatrix, mc.getWindow().getScaledWidth(), mc.getWindow().getScaledHeight(), behind);
+
+        Vector2f screenPos = worldToScreen(
+                new Vector3f(relX, relY, relZ),
+                cachedViewMatrix,
+                cachedProjectionMatrix,
+                mc.getWindow().getScaledWidth(),
+                mc.getWindow().getScaledHeight(),
+                behind
+        );
         if (screenPos == null) return;
+
         MatrixStack matrices = context.getMatrices();
         matrices.push();
         matrices.scale(scale, scale, scale);
