@@ -34,7 +34,7 @@ import static star.sequoia2.client.SeqClient.mc;
 public class ChatHook extends ToggleFeature implements GuildParserAccessor, TeXParserAccessor, EventBusAccessor {
 
     public ChatHook() {
-        super("ChatHook", "Chat related stuffs (type shi)", true);
+        super("ChatHook", "Guild raid and chat parser", true);
     }
 
     BooleanSetting gRaidsUntilLvlUp = settings().bool("GRaidsUntilLvlUp", "Raids till levelup in raid comp message", false);
