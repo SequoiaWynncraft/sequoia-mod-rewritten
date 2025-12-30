@@ -13,7 +13,7 @@ import star.sequoia2.accessors.NotificationsAccessor;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.types.command.Command;
 import star.sequoia2.client.types.command.suggestions.SuggestionProviders;
-import star.sequoia2.features.impl.ws.WebSocketFeature;
+import star.sequoia2.features.impl.ws.WebSocket;
 import star.sequoia2.utils.wynn.WynnUtils;
 import star.sequoia2.utils.TickScheduler;
 
@@ -66,8 +66,8 @@ public class SeqDisconnectCommand extends Command implements FeaturesAccessor, N
     }
 
     private void sorter(CommandContext<FabricClientCommandSource> ctx) {
-        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
-        if (wsFeature.map(WebSocketFeature::isActive).orElse(false)) {
+        Optional<WebSocket> wsFeature = features().getIfActive(WebSocket.class);
+        if (wsFeature.map(WebSocket::isActive).orElse(false)) {
         } else {
             ctx.getSource()
                     .sendError(
@@ -83,7 +83,7 @@ public class SeqDisconnectCommand extends Command implements FeaturesAccessor, N
                         return;
                     }
 
-                    if (wsFeature.map(WebSocketFeature::getClient).isEmpty()
+                    if (wsFeature.map(WebSocket::getClient).isEmpty()
                             || !wsFeature.map(webSocketFeature -> webSocketFeature.getClient().isOpen()).orElse(false)) {
                         ctx.getSource()
                                 .sendError(prefixed(Text.translatable("sequoia.command.disconnect.notConnected")));
@@ -95,7 +95,7 @@ public class SeqDisconnectCommand extends Command implements FeaturesAccessor, N
                                     prefixed(Text.translatable("sequoia.command.disconnect.disconnecting"))
 
                             );
-                    wsFeature.ifPresent(WebSocketFeature::closeIfNeeded);
+                    wsFeature.ifPresent(WebSocket::closeIfNeeded);
                     TickScheduler.scheduleTicks(() -> {
                         if (wsFeature.map(webSocketFeature -> webSocketFeature.getClient().isClosed()).orElse(true)) {
                             ctx.getSource()

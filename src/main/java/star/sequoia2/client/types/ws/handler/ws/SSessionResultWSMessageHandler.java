@@ -5,7 +5,7 @@ import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.types.ws.handler.WSMessageHandler;
 import star.sequoia2.client.types.ws.message.ws.SSessionResultWSMessage;
-import star.sequoia2.features.impl.ws.WebSocketFeature;
+import star.sequoia2.features.impl.ws.WebSocket;
 import star.sequoia2.utils.AccessTokenManager;
 
 import java.util.regex.Pattern;
@@ -25,7 +25,7 @@ public class SSessionResultWSMessageHandler extends WSMessageHandler implements 
 
     @Override
     public void handle() {
-        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
+        Optional<WebSocket> wsFeature = features().getIfActive(WebSocket.class);
         SSessionResultWSMessage sSessionResultWSMessage = GSON.fromJson(message, SSessionResultWSMessage.class);
         SSessionResultWSMessage.Data sSessionResultWSMessageData = sSessionResultWSMessage.getSSessionResultData();
 

@@ -3,8 +3,8 @@ package star.sequoia2.utils.chatparser;
 import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.types.ws.message.ws.GChatMessageWSMessage;
-import star.sequoia2.features.impl.ws.ChatHookFeature;
-import star.sequoia2.features.impl.ws.WebSocketFeature;
+import star.sequoia2.features.impl.ws.ChatHook;
+import star.sequoia2.features.impl.ws.WebSocket;
 import star.sequoia2.utils.TimeUtils;
 
 import java.util.Optional;
@@ -12,7 +12,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static star.sequoia2.client.SeqClient.mc;
-import static star.sequoia2.features.impl.ws.ChatHookFeature.clean;
+import static star.sequoia2.features.impl.ws.ChatHook.clean;
 import static star.sequoia2.utils.cache.SequoiaMemberCache.isSequoiaMember;
 
 public class GuildMessageParser implements FeaturesAccessor {
@@ -32,11 +32,11 @@ public class GuildMessageParser implements FeaturesAccessor {
     public void parseGuildMessage(String tex) {
         try {
             String username = null, nickname = null, guildMsg = null;
-            Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
-            Optional<ChatHookFeature> chatFeature = features().getIfActive(ChatHookFeature.class);
-            boolean wsEnabled = wsFeature.map(WebSocketFeature::isActive).orElse(false);
-            boolean wsAuthenticated = wsFeature.map(WebSocketFeature::isAuthenticated).orElse(false);
-            boolean chatEnabled = chatFeature.map(ChatHookFeature::isActive).orElse(false);
+            Optional<WebSocket> wsFeature = features().getIfActive(WebSocket.class);
+            Optional<ChatHook> chatFeature = features().getIfActive(ChatHook.class);
+            boolean wsEnabled = wsFeature.map(WebSocket::isActive).orElse(false);
+            boolean wsAuthenticated = wsFeature.map(WebSocket::isAuthenticated).orElse(false);
+            boolean chatEnabled = chatFeature.map(ChatHook::isActive).orElse(false);
 
             Matcher mh = GUILD_CHAT_HOVER.matcher(tex);
             if (mh.find()) {
@@ -88,7 +88,7 @@ public class GuildMessageParser implements FeaturesAccessor {
                             mc.player.getName().getString()
                     )
             );
-            features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.sendMessage(payload));
+            features().getIfActive(WebSocket.class).map(webSocketFeature -> webSocketFeature.sendMessage(payload));
         } catch (Exception e) {
             SeqClient.error("Failed to parse guild chat message", e);
         }

@@ -28,7 +28,7 @@ import static star.sequoia2.client.SeqClient.mc;
 import static star.sequoia2.client.types.ws.WSConstants.GSON;
 
 
-public class WebSocketFeature extends ToggleFeature {
+public class WebSocket extends ToggleFeature {
 
     BooleanSetting autoReconnect = settings().bool("AutoReconnect", "Automatically reconnect when you disconnec", true);
 
@@ -47,7 +47,7 @@ public class WebSocketFeature extends ToggleFeature {
     private boolean reconnectPending = false;
     private boolean manualDisconnect = false;
 
-    public WebSocketFeature() {
+    public WebSocket() {
         super("WebSocket", "Websocket settings" ,true);
     }
 
@@ -57,14 +57,8 @@ public class WebSocketFeature extends ToggleFeature {
             SeqClient.warn("Player UUID is not available. WebSocket connection will not be established.");
             return;
         }
-//        SeqClient.debug(String.format("Using %s for URI", Sequoia2.isDevelopmentEnvironment()
-//                ? WS_DEV_URL
-//                : WS_PROD_URL));
 
         initClient(
-//                URI.create(Sequoia2.isDevelopmentEnvironment()
-//                                ? WS_DEV_URL
-//                                : WS_PROD_URL),
                 SeqClient.testMode ? URI.create(WS_DEV_URL) : URI.create(WS_PROD_URL),
                 Map.of(
                         "Authoworization",
