@@ -1,13 +1,8 @@
 package star.sequoia2.client.types.ws.handler.ws;
 
-import net.minecraft.util.math.BlockPos;
 import star.sequoia2.accessors.FeaturesAccessor;
-import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.types.ws.handler.WSMessageHandler;
 import star.sequoia2.client.types.ws.message.ws.SIC3DataWSMessage;
-import star.sequoia2.client.types.ws.type.PosCodec;
-
-import java.util.List;
 
 import static star.sequoia2.client.types.ws.WSConstants.GSON;
 

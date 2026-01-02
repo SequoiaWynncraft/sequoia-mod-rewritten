@@ -62,7 +62,14 @@ public enum WSMessageType {
     G_KEEPERS_PING,
     G_GUILD_BANK_EVENT,
     G_GUILD_BANK_STATE,
-    G_GUILD_EVENT;
+    G_GUILD_EVENT,
+
+    S_TOAST_NOTIFICATION,
+    S_GUI_REQUEST,
+    G_BOMB_BELL,
+
+    N_RPC_MESSAGE,
+    S_RPC_MESSAGE;
 
     public static WSMessageType fromValue(int value) {
         for (WSMessageType type : values()) {
