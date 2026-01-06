@@ -130,7 +130,9 @@ public class GuildWarTracker extends ToggleFeature {
                 submittedAt,
                 startTime,
                 uniqueWarrers,
-                new GGuildWarSubmissionWSMessage.Results(toWsStats(summary.stats())));
+                new GGuildWarSubmissionWSMessage.Results(toWsStats(summary.stats())),
+                0,//TODO:FIX
+                false);//TODO CHECK IF THIS IS REAL
 
         webSocket.sendMessage(new GGuildWarSubmissionWSMessage(data));
         context.submissionSent = true;
