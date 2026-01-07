@@ -1,7 +1,9 @@
 package star.sequoia2.features.impl;
 
 import com.collarmc.pounce.Subscribe;
+import com.wynntils.core.WynntilsMod;
 import com.wynntils.core.components.Models;
+import com.wynntils.models.character.event.CharacterDeathEvent;
 import com.wynntils.models.war.type.WarBattleInfo;
 import com.wynntils.models.war.type.WarTowerState;
 import com.wynntils.utils.type.RangedValue;
@@ -12,6 +14,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import net.minecraft.entity.player.PlayerEntity;
+import net.neoforged.bus.api.SubscribeEvent;
 import star.sequoia2.client.types.ws.message.ws.GGuildWarSubmissionWSMessage;
 import star.sequoia2.events.PlayerTickEvent;
 import star.sequoia2.features.ToggleFeature;
@@ -25,19 +28,34 @@ public class GuildWarTracker extends ToggleFeature {
     private static final double TRACKING_RADIUS_SQ = 120 * 120;
 
     private WarContext activeContext;
-    private boolean playerWasDead;
     private String lastProcessedBattleId;
     private int lastProcessedStateHash;
+    private boolean wynnDeathListenerRegistered;
 
     public GuildWarTracker() {
         super("GuildWarTracker", "Tracks guild war results", true);
+    }
+
+    @Override
+    protected void onActivate() {
+        registerWynnDeathListener();
+    }
+
+    @Override
+    protected void onDeactivate() {
+        unregisterWynnDeathListener();
     }
 
     @Subscribe
     public void onPlayerTick(PlayerTickEvent event) {
         if (mc.player == null) return;
         trackWarState();
-        detectPlayerDeath();
+    }
+
+    @SubscribeEvent
+    public void onCharacterDeath(CharacterDeathEvent event) {
+        if (!isActive() || activeContext == null || activeContext.submissionSent) return;
+        submitWar(activeContext.info, activeContext);
     }
 
     private void trackWarState() {
@@ -77,26 +95,16 @@ public class GuildWarTracker extends ToggleFeature {
         }
     }
 
-    private void detectPlayerDeath() {
-        if (activeContext == null || activeContext.submissionSent) {
-            playerWasDead = false;
-            return;
-        }
-        if (mc.player == null) {
-            playerWasDead = false;
-            return;
-        }
-        boolean isDead = mc.player.isDead() || mc.player.getHealth() <= 0;
-        if (!playerWasDead && isDead) {
-            handlePlayerDeath();
-        }
-        playerWasDead = isDead;
+    private void registerWynnDeathListener() {
+        if (wynnDeathListenerRegistered) return;
+        WynntilsMod.registerEventListener(this);
+        wynnDeathListenerRegistered = true;
     }
 
-    private void handlePlayerDeath() {
-        if (activeContext != null && !activeContext.submissionSent) {
-            submitWar(activeContext.info, activeContext);
-        }
+    private void unregisterWynnDeathListener() {
+        if (!wynnDeathListenerRegistered) return;
+        WynntilsMod.unregisterEventListener(this);
+        wynnDeathListenerRegistered = false;
     }
 
     private void submitWar(WarBattleInfo info, WarContext context) {
