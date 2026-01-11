@@ -1,4 +1,4 @@
-package star.sequoia2.gui.hud.frame;
+package star.sequoia2.hud;
 
 import mil.nga.color.Color;
 import net.minecraft.client.gui.DrawContext;
@@ -7,8 +7,6 @@ import star.sequoia2.accessors.RenderUtilAccessor;
 import star.sequoia2.accessors.TextRendererAccessor;
 import star.sequoia2.features.impl.Settings;
 import star.sequoia2.gui.component.InteractableComponent;
-import star.sequoia2.gui.hud.button.HUDElementButton;
-import star.sequoia2.hud.HUDElements;
 import star.sequoia2.gui.screen.ClickGUIScreen;
 
 import java.util.Comparator;

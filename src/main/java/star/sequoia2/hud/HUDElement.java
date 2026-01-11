@@ -169,6 +169,32 @@ public abstract class HUDElement extends InteractableComponent implements JSONCo
         isDragging = false;
     }
 
+
+    //next 4 overrides js so i dont have to overrride for random ahh hudelements
+    @Override
+    public void mouseMoved(float mouseX, float mouseY) {
+    }
+
+    @Override
+    public void mouseScrolled(float mouseX, float mouseY, double horizontalAmount, double verticalAmount) {
+
+    }
+
+    @Override
+    public void keyPressed(int keyCode, int scanCode, int modifiers) {
+
+    }
+
+    @Override
+    public void keyReleased(int keyCode, int scanCode, int modifiers) {
+
+    }
+
+    @Override
+    public void charTyped(char chr, int modifiers) {
+
+    }
+
     @Override
     public JsonCompound toJSON() {
         JsonCompound json = new JsonCompound();

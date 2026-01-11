@@ -66,7 +66,7 @@ public class HUDLayer extends InteractableComponent implements EventBusAccessor,
     }
 
 
-    // these are for symmetry #thosewhoknow
+    // these are for symmetry #thosewhoknow (need to have these if we wana keep interactable abstract)
     @Override
     public void mouseMoved(float mouseX, float mouseY) {}
 

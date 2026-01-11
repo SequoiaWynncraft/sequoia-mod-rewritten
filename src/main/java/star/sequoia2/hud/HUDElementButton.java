@@ -1,4 +1,4 @@
-package star.sequoia2.gui.hud.button;
+package star.sequoia2.hud;
 
 import mil.nga.color.Color;
 import net.minecraft.client.gui.DrawContext;
@@ -16,9 +16,7 @@ import star.sequoia2.gui.component.settings.impl.EnumSettingComponent;
 import star.sequoia2.gui.component.settings.impl.KeybindSettingComponent;
 import star.sequoia2.gui.component.settings.impl.SliderComponent;
 import star.sequoia2.gui.component.settings.impl.TextInputSettingComponent;
-import star.sequoia2.gui.hud.frame.HudEditorFrame;
 import star.sequoia2.gui.screen.GuiRoot;
-import star.sequoia2.hud.HUDElement;
 import star.sequoia2.settings.Setting;
 import star.sequoia2.settings.types.BooleanSetting;
 import star.sequoia2.settings.types.CalculatedEnumSetting;

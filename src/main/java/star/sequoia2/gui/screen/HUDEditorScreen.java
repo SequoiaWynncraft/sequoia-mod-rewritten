@@ -9,7 +9,7 @@ import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.accessors.HudElementsAccessor;
 import star.sequoia2.accessors.RenderUtilAccessor;
 import star.sequoia2.features.impl.Settings;
-import star.sequoia2.gui.hud.frame.HudEditorFrame;
+import star.sequoia2.hud.HudEditorFrame;
 import star.sequoia2.hud.positions.PositionKey;
 import star.sequoia2.hud.positions.UIPosition;
 
