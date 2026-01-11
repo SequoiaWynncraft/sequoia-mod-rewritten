@@ -88,7 +88,7 @@ public class HudEditorFrame extends InteractableComponent implements FeaturesAcc
                 textRenderer(),
                 "X",
                 (int) (closeX + (closeW - textRenderer().getWidth("X")) / 2),
-                (int) (closeY + (closeH - textRenderer().fontHeight) / 2),
+                (int) (closeY + (closeH - textRenderer().fontHeight) / 2 + 1),
                 light.getColor(),
                 true
         );

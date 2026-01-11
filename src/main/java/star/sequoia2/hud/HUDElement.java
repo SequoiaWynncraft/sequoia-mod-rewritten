@@ -18,6 +18,7 @@ import star.sequoia2.hud.positions.UIPosition;
 import star.sequoia2.settings.Setting;
 import star.sequoia2.settings.Settings;
 
+import java.awt.*;
 import java.io.IOException;
 
 import static star.sequoia2.client.SeqClient.mc;
@@ -130,8 +131,9 @@ public abstract class HUDElement extends InteractableComponent implements JSONCo
                 y = mc.getWindow().getScaledHeight() - height;
             }
 
-            int color = features().get(star.sequoia2.features.impl.Settings.class).map(settings -> settings.getColorNormal().get().getColorWithAlpha()).orElse(1);
-            render2DUtil().fill(context.getMatrices(), (int) x, (int) y, width, height, color);
+            int color = new Color(0,0,0,50).getRGB();
+            //remove if ts is annoying
+            render2DUtil().fill(context.getMatrices(), (int) x, (int) y, x + width, y + height, color);
 
             if (isDragging) {
                 int yellow = 0xFFFFFF00;
