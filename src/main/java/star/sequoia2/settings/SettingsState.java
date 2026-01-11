@@ -9,6 +9,8 @@ import star.sequoia2.events.SettingChanged;
 import star.sequoia2.features.Feature;
 import star.sequoia2.features.Features;
 import star.sequoia2.client.SeqClient;
+import star.sequoia2.hud.HUDElement;
+import star.sequoia2.hud.HUDElements;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -22,9 +24,16 @@ import java.util.concurrent.ConcurrentMap;
 public class SettingsState implements ConfigurationAccessor {
 
     private final ConcurrentMap<Feature, Settings> featureSettings = new ConcurrentHashMap<>();
+    private final ConcurrentMap<HUDElement, Settings> hudElementSettings = new ConcurrentHashMap<>();
 
     public Settings fromFeature(Feature feature) {
         return featureSettings.compute(feature, (theFeature, featureSettings) -> Objects.requireNonNullElseGet(featureSettings, () -> getOrCreateSettingJSON(feature.getClass())
+                .map(compound -> new Settings())
+                .orElse(new Settings())));
+    }
+
+    public Settings fromHUDElement(HUDElement element) {
+        return hudElementSettings.compute(element, (theModule, moduleSettings) -> Objects.requireNonNullElseGet(moduleSettings, () -> getOrCreateSettingJSON(element.getClass())
                 .map(compound -> new Settings())
                 .orElse(new Settings())));
     }
@@ -38,7 +47,7 @@ public class SettingsState implements ConfigurationAccessor {
                 .findFirst();
     }
 
-    public void load(Features features) {
+    public void load(Features features, HUDElements hudElements) {
         JsonArray settingsList = configuration().getFeatures().getList("settings");
         if (settingsList == null) return;
         settingsList.forEach(jsonElement -> {
@@ -47,6 +56,10 @@ public class SettingsState implements ConfigurationAccessor {
             features.featureByClass(clazz).ifPresent(module -> {
                 module.reset();
                 module.fromJSON(json);
+            });
+            hudElements.elementByClass(clazz).ifPresent(hudElement -> {
+                hudElement.reset();
+                hudElement.fromJSON(json);
             });
         });
     }

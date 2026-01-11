@@ -23,6 +23,8 @@ import star.sequoia2.features.impl.ws.DiscordChatBridge;
 import star.sequoia2.features.impl.ws.WebSocket;
 import star.sequoia2.gui.Fonts;
 import star.sequoia2.gui.categories.Categories;
+import star.sequoia2.hud.HUDElements;
+import star.sequoia2.hud.positions.UIPositions;
 import star.sequoia2.settings.SettingsState;
 import star.sequoia2.utils.cache.Threading;
 import star.sequoia2.utils.chatparser.GuildMessageParser;
@@ -107,6 +109,12 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
     @Getter
     private static TeXParser teXParser;
 
+    @Getter
+    private static UIPositions uiPositions;
+
+    @Getter
+    private static HUDElements hudElements;
+
     @Override
     public void onInitializeClient() {
         LOGGER.info("Initializing Seq client.");
@@ -121,6 +129,8 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
         }
 
         SEQUOIA_FOLDER = new File(mc.runDirectory, "sequoia");
+
+        uiPositions = new UIPositions();
 
         //Static init no need for instance in this case
         Threading tInit = new Threading();
@@ -142,6 +152,7 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
 
     @Subscribe(value = Preference.MAIN, priority = 1)
     public void onFinishedLoading(MinecraftFinishedLoading ignored) {
+        hudElements = new HUDElements();
         features = new Features();
         settings = new SettingsState();
 
@@ -149,7 +160,7 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
         registerFeatures();
 
         try {
-            settings.load(features);
+            settings.load(features, hudElements);
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
