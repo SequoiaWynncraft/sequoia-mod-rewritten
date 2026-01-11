@@ -131,7 +131,7 @@ public final class GuiRoot implements RenderUtilAccessor, TextRendererAccessor, 
         }
 
         if (settingsIdx != -1) {
-            float settingsY = by + boxHeight - pad - btnW;
+            float settingsY = by + boxHeight - pad - btnW - btnW - btnGap; // Move up to make room for HUD Editor button
             boolean hoverSettings = mouseX >= listX && mouseX <= listX + btnW && mouseY >= settingsY && mouseY <= settingsY + btnW;
 
             Color sStart;
@@ -145,6 +145,19 @@ public final class GuiRoot implements RenderUtilAccessor, TextRendererAccessor, 
 
             render2DUtil().drawTextureColored(context, TextureStorage.cogs, listX, settingsY, listX + btnW, settingsY + btnW, new java.awt.Color(sStart.getRed(), sStart.getGreen(), sStart.getBlue(), sStart.getAlpha()).getRGB());
         }
+
+        float hudEditorY = by + boxHeight - pad - btnW;
+        boolean hoverHudEditor = mouseX >= listX && mouseX <= listX + btnW && mouseY >= hudEditorY && mouseY <= hudEditorY + btnW;
+
+        Color hudEditorColor;
+        if (hoverHudEditor) {
+            hudEditorColor = accent1;
+        } else {
+            hudEditorColor = light;
+        }
+
+        render2DUtil().roundRectFilled(matrices, listX, hudEditorY, listX + btnW, hudEditorY + btnW, rounding, new Color(hudEditorColor.getRed(), hudEditorColor.getGreen(), hudEditorColor.getBlue(), hoverHudEditor ? 255 : 180));
+        context.drawText(textRenderer(), "HUD", (int) (listX + (btnW - textRenderer().getWidth("HUD")) / 2f), (int) (hudEditorY + (btnW - textRenderer().fontHeight) / 2f), light.getColor(), true);
 
         float contentX = bx + menuW + pad;
         float contentY = by + pad;
@@ -211,11 +224,18 @@ public final class GuiRoot implements RenderUtilAccessor, TextRendererAccessor, 
 
         if (settingsIdx != -1) {
             float settingsX = listX;
-            float settingsY = by + boxHeight - pad - btnW;
+            float settingsY = by + boxHeight - pad - btnW - btnW - btnGap;
             if (mouseX >= settingsX && mouseX <= settingsX + btnW && mouseY >= settingsY && mouseY <= settingsY + btnW) {
                 selected = settingsIdx;
                 return;
             }
+        }
+
+        float hudEditorX = listX;
+        float hudEditorY = by + boxHeight - pad - btnW;
+        if (mouseX >= hudEditorX && mouseX <= hudEditorX + btnW && mouseY >= hudEditorY && mouseY <= hudEditorY + btnW) {
+            star.sequoia2.client.SeqClient.mc.setScreen(new star.sequoia2.gui.screen.HUDEditorScreen());
+            return;
         }
 
         if (categories.isEmpty()) return;

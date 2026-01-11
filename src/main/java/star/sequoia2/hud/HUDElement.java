@@ -46,7 +46,7 @@ public abstract class HUDElement extends InteractableComponent implements JSONCo
         this.description = description;
     }
 
-    protected Settings settings() {
+    public Settings settings() {
         return settingsState().fromHUDElement(this);
     }
 
@@ -136,10 +136,10 @@ public abstract class HUDElement extends InteractableComponent implements JSONCo
             if (isDragging) {
                 int yellow = 0xFFFFFF00;
                 if (snapX) {
-                    render2DUtil().fill(context.getMatrices(), screenCenterX, 0, 1, mc.getWindow().getScaledHeight(), yellow);
+                    render2DUtil().fill(context.getMatrices(), screenCenterX, 0, screenCenterX + 1, mc.getWindow().getScaledHeight(), yellow);
                 }
                 if (snapY) {
-                    render2DUtil().fill(context.getMatrices(), 0, screenCenterY, mc.getWindow().getScaledWidth(), 1, yellow);
+                    render2DUtil().fill(context.getMatrices(), 0, screenCenterY, mc.getWindow().getScaledWidth(), screenCenterY + 1, yellow);
                 }
             }
         }
@@ -156,7 +156,6 @@ public abstract class HUDElement extends InteractableComponent implements JSONCo
 
     @Override
     public void mouseReleased(float mouseX, float mouseY, int button) {
-        // Save on
         if (isActive() && isDragging) {
             try {
                 SeqClient.getUiPositions().set(PositionKey.fromHudElement(this), UIPosition.relativeToWindow(x, y, mc.getWindow()));

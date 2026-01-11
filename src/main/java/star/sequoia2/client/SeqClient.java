@@ -158,6 +158,7 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
 
         subscribe(settings);
         registerFeatures();
+        registerHUDElements();
 
         try {
             settings.load(features, hudElements);
@@ -202,6 +203,10 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
         features.add(new GuildRewardGranter());
         features.add(new GuildWarTracker());
         //TODO: finish commented out features.
+    }
+
+    private void registerHUDElements() {
+        hudElements.add(new star.sequoia2.hud.elements.ExampleHUDElement());
     }
 
     public static final ScheduledExecutorService SCHEDULER =
