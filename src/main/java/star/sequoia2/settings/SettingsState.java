@@ -4,6 +4,7 @@ import com.collarmc.pounce.Subscribe;
 import com.google.gson.JsonArray;
 import star.sequoia2.accessors.ConfigurationAccessor;
 import star.sequoia2.configuration.JsonCompound;
+import star.sequoia2.events.HudElementChanged;
 import star.sequoia2.events.ModuleChangedEvent;
 import star.sequoia2.events.SettingChanged;
 import star.sequoia2.features.Feature;
@@ -74,6 +75,10 @@ public class SettingsState implements ConfigurationAccessor {
                     JsonCompound moduleJson = module.toJSON();
                     array.add(moduleJson);
                 });
+                hudElementSettings.forEach((element, settings) -> {
+                    JsonCompound elementJson = element.toJSON();
+                    array.add(elementJson);
+                });
                 configuration().getFeatures().put("settings", array);
                 configuration().save();
             } catch (IOException e) {
@@ -82,6 +87,11 @@ public class SettingsState implements ConfigurationAccessor {
                 SeqClient.warn("unexpected error during configuration save", e);
             }
         }
+    }
+
+    @Subscribe
+    private void onHudElementChanged(HudElementChanged ignored) {
+        save();
     }
 
     @Subscribe
