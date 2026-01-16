@@ -1,0 +1,22 @@
+{
+  "enable": {
+    "sounds": [
+      "seq:enable"
+    ]
+  },
+  "disable": {
+    "sounds": [
+      "seq:disable"
+    ]
+  },
+  "hover": {
+    "sounds": [
+      "seq:hover"
+    ]
+  },
+  "badroom": {
+    "sounds": [
+      "seq:badroom"
+    ]
+  }
+}

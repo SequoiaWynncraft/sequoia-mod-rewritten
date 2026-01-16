@@ -8,13 +8,13 @@ import org.lwjgl.glfw.GLFW;
 import star.sequoia2.accessors.RenderUtilAccessor;
 import star.sequoia2.features.impl.Settings;
 import star.sequoia2.gui.component.settings.SettingComponent;
-import star.sequoia2.gui.screen.ClickGUIScreen;
 import star.sequoia2.settings.types.ColorSetting;
 
 public class ColorSettingComponent extends SettingComponent<Color> implements RenderUtilAccessor {
     @Getter
     private boolean open = false;
     private final float[] selectedColor;
+    private boolean dragging = false;
 
     public ColorSettingComponent(ColorSetting setting) {
         super(setting);
@@ -49,7 +49,7 @@ public class ColorSettingComponent extends SettingComponent<Color> implements Re
             float alphaY1 = pickerY2 + 17.0f;
             float alphaY2 = alphaY1 + 10.0f;
 
-            if (ClickGUIScreen.MOUSE_LEFT_HOLD) {
+            if (dragging) {
                 if (isWithin(mouseX, mouseY, pickerX1, pickerY1, pickerX2, pickerY2)) {
                     selectedColor[1] = MathHelper.clamp((mouseX - pickerX1) / size, 0.0f, 1.0f);
                     selectedColor[2] = MathHelper.clamp((mouseY - pickerY1) / size, 0.0f, 1.0f);
@@ -115,6 +115,38 @@ public class ColorSettingComponent extends SettingComponent<Color> implements Re
         if (isWithin(mouseX, mouseY) && button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
             open = !open;
         }
+        if (!open) return;
+        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            float left = contentX();
+            float top = contentY();
+            float pad = getGuiRoot().pad;
+            float fontH = textRenderer().fontHeight;
+
+            float pickerX1 = left + 1.0f;
+            float pickerY1 = top + fontH + 2.0f + pad;
+            float size = Math.max(64.0f, Math.min(getWidth() - 2.0f, 120.0f));
+            float pickerX2 = pickerX1 + size;
+            float pickerY2 = pickerY1 + size;
+
+            float hueY1 = pickerY2 + 4.0f;
+            float hueY2 = hueY1 + 10.0f;
+
+            float alphaY1 = pickerY2 + 17.0f;
+            float alphaY2 = alphaY1 + 10.0f;
+
+            if (isWithin(mouseX, mouseY, pickerX1, pickerY1, pickerX2, pickerY2)
+                    || isWithin(mouseX, mouseY, pickerX1, hueY1, pickerX2, hueY2)
+                    || isWithin(mouseX, mouseY, pickerX1, alphaY1, pickerX2, alphaY2)) {
+                dragging = true;
+            }
+        }
+    }
+
+    @Override
+    public void mouseReleased(float mouseX, float mouseY, int button) {
+        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            dragging = false;
+        }
     }
 
     private boolean isWithin(double mx, double my, float x1, float y1, float x2, float y2) {
@@ -123,7 +155,6 @@ public class ColorSettingComponent extends SettingComponent<Color> implements Re
 
     public float getPickerHeight() {
         float pickerHeight = 150f;
-
         return pickerHeight + getHeight();
     }
 }

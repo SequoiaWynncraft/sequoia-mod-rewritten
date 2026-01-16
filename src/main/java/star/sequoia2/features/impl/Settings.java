@@ -7,6 +7,7 @@ import mil.nga.color.Color;
 import org.lwjgl.glfw.GLFW;
 import net.minecraft.util.Formatting;
 import net.minecraft.text.Text;
+import star.sequoia2.accessors.EventBusAccessor;
 import star.sequoia2.accessors.NotificationsAccessor;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.update.UpdateChannel;
@@ -16,6 +17,7 @@ import star.sequoia2.events.input.KeyEvent;
 import star.sequoia2.features.Feature;
 import star.sequoia2.gui.Fonts;
 import star.sequoia2.gui.screen.ClickGUIScreen;
+import star.sequoia2.hud.HUDLayer;
 import star.sequoia2.settings.Binding;
 import star.sequoia2.settings.types.*;
 import star.sequoia2.utils.render.Themes;
@@ -23,7 +25,7 @@ import star.sequoia2.utils.render.Themes;
 import static star.sequoia2.client.SeqClient.mc;
 
 @Getter
-public class Settings extends Feature implements NotificationsAccessor {
+public class Settings extends Feature implements NotificationsAccessor, EventBusAccessor {
 
     public final KeybindSetting menuKeybind = settings().binding("GuiKey:", "Opens the ClickGui", Binding.withKey(GLFW.GLFW_KEY_O));
 
@@ -50,12 +52,16 @@ public class Settings extends Feature implements NotificationsAccessor {
 
     EnumSetting<UpdateChannel> updateChannel = settings().options("UpdateChannel", "Choose which update channel to use", UpdateChannel.STABLE, UpdateChannel.class);
 
+    public final HUDLayer hudLayer;
+
     @Setter
     public ClickGUIScreen clickGui;
 
     public Settings() {
         super("Settings", "Client settings");
         UpdateManager.setChannel(updateChannel.get());
+        this.hudLayer = new HUDLayer();
+        subscribe(hudLayer);
     }
 
     public int getNormalColorInt() {

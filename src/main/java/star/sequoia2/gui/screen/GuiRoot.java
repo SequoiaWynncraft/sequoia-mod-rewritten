@@ -131,8 +131,22 @@ public final class GuiRoot implements RenderUtilAccessor, TextRendererAccessor, 
         }
 
         if (settingsIdx != -1) {
+            float iconX = listX + (maxBtnWidth - btnW) / 2f;
+
+            float hudEditorY = by + boxHeight - pad - btnW - btnGap - btnW;
+            boolean hoverHudEditor = mouseX >= iconX && mouseX <= iconX + btnW && mouseY >= hudEditorY && mouseY <= hudEditorY + btnW;
+
+            Color hudEditorStart;
+            if (hoverHudEditor) {
+                hudEditorStart = accent1;
+            } else {
+                hudEditorStart = light;
+            }
+
+            render2DUtil().drawTextureColored(context, TextureStorage.arrow, iconX, hudEditorY, iconX + btnW, hudEditorY + btnW, new java.awt.Color(hudEditorStart.getRed(), hudEditorStart.getGreen(), hudEditorStart.getBlue(), hudEditorStart.getAlpha()).getRGB());
+
             float settingsY = by + boxHeight - pad - btnW;
-            boolean hoverSettings = mouseX >= listX && mouseX <= listX + btnW && mouseY >= settingsY && mouseY <= settingsY + btnW;
+            boolean hoverSettings = mouseX >= iconX && mouseX <= iconX + btnW && mouseY >= settingsY && mouseY <= settingsY + btnW;
 
             Color sStart;
             if (selected == settingsIdx) {
@@ -143,7 +157,7 @@ public final class GuiRoot implements RenderUtilAccessor, TextRendererAccessor, 
                 sStart = light;
             }
 
-            render2DUtil().drawTextureColored(context, TextureStorage.cogs, listX, settingsY, listX + btnW, settingsY + btnW, new java.awt.Color(sStart.getRed(), sStart.getGreen(), sStart.getBlue(), sStart.getAlpha()).getRGB());
+            render2DUtil().drawTextureColored(context, TextureStorage.cogs, iconX, settingsY, iconX + btnW, settingsY + btnW, new java.awt.Color(sStart.getRed(), sStart.getGreen(), sStart.getBlue(), sStart.getAlpha()).getRGB());
         }
 
         float contentX = bx + menuW + pad;
@@ -189,6 +203,7 @@ public final class GuiRoot implements RenderUtilAccessor, TextRendererAccessor, 
 
         float listX = bx + pad;
         float listY = by + btnW + pad * 2;
+        float iconX = listX + (maxBtnWidth - btnW) / 2f;
 
         int settingsIdx = -1;
         for (int i = 0; i < categories.size(); i++) {
@@ -210,12 +225,19 @@ public final class GuiRoot implements RenderUtilAccessor, TextRendererAccessor, 
         }
 
         if (settingsIdx != -1) {
-            float settingsX = listX;
+            float settingsX = iconX;
             float settingsY = by + boxHeight - pad - btnW;
             if (mouseX >= settingsX && mouseX <= settingsX + btnW && mouseY >= settingsY && mouseY <= settingsY + btnW) {
                 selected = settingsIdx;
                 return;
             }
+        }
+
+        float hudEditorX = iconX;
+        float hudEditorY = by + boxHeight - pad - btnW - btnW - btnGap;
+        if (mouseX >= hudEditorX && mouseX <= hudEditorX + btnW && mouseY >= hudEditorY && mouseY <= hudEditorY + btnW) {
+            star.sequoia2.client.SeqClient.mc.setScreen(new star.sequoia2.gui.screen.HUDEditorScreen());
+            return;
         }
 
         if (categories.isEmpty()) return;
