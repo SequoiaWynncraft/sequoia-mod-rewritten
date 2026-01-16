@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import star.sequoia2.accessors.EventBusAccessor;
 import star.sequoia2.client.commands.Commands;
 import star.sequoia2.client.notifications.Notifications;
+import star.sequoia2.client.update.UpdateManager;
 import star.sequoia2.configuration.Configuration;
 import star.sequoia2.events.MinecraftFinishedLoading;
 import star.sequoia2.features.Features;
@@ -23,22 +24,25 @@ import star.sequoia2.features.impl.ws.DiscordChatBridge;
 import star.sequoia2.features.impl.ws.WebSocket;
 import star.sequoia2.gui.Fonts;
 import star.sequoia2.gui.categories.Categories;
+import star.sequoia2.hud.HUDElements;
+import star.sequoia2.hud.elements.RaidRoomTracker;
+import star.sequoia2.hud.positions.UIPositions;
 import star.sequoia2.settings.SettingsState;
+import star.sequoia2.utils.SoundUtil;
+import star.sequoia2.utils.TickScheduler;
 import star.sequoia2.utils.cache.Threading;
 import star.sequoia2.utils.chatparser.GuildMessageParser;
 import star.sequoia2.utils.chatparser.GuildRaidParser;
-import star.sequoia2.utils.render.Themes;
 import star.sequoia2.utils.render.Render2DUtil;
 import star.sequoia2.utils.render.Render3DUtil;
+import star.sequoia2.utils.render.Themes;
 import star.sequoia2.utils.text.parser.TeXParser;
 import star.sequoia2.utils.wynn.HadesUtils;
-import star.sequoia2.client.update.UpdateManager;
-import star.sequoia2.utils.TickScheduler;
 
-import java.net.URISyntaxException;
-import java.security.CodeSource;
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.security.CodeSource;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -107,6 +111,15 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
     @Getter
     private static TeXParser teXParser;
 
+    @Getter
+    private static UIPositions uiPositions;
+
+    @Getter
+    private static HUDElements hudElements;
+
+    @Getter
+    private static SoundUtil soundUtil;
+
     @Override
     public void onInitializeClient() {
         LOGGER.info("Initializing Seq client.");
@@ -122,6 +135,8 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
 
         SEQUOIA_FOLDER = new File(mc.runDirectory, "sequoia");
 
+        uiPositions = new UIPositions();
+
         //Static init no need for instance in this case
         Threading tInit = new Threading();
         Thread thread = new Thread(tInit, "Sequoia-CacheInit");
@@ -134,6 +149,7 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
         themes = new Themes();
 
         notifications = new Notifications();
+        soundUtil = new SoundUtil();
         render2DUtil = new Render2DUtil();
         render3DUtil = new Render3DUtil();
 
@@ -142,14 +158,16 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
 
     @Subscribe(value = Preference.MAIN, priority = 1)
     public void onFinishedLoading(MinecraftFinishedLoading ignored) {
+        hudElements = new HUDElements();
         features = new Features();
         settings = new SettingsState();
 
         subscribe(settings);
         registerFeatures();
+        registerHUDElements();
 
         try {
-            settings.load(features);
+            settings.load(features, hudElements);
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
@@ -191,6 +209,10 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
         features.add(new GuildRewardGranter());
         features.add(new GuildWarTracker());
         //TODO: finish commented out features.
+    }
+
+    private void registerHUDElements() {
+        hudElements.add(new RaidRoomTracker());
     }
 
     public static final ScheduledExecutorService SCHEDULER =

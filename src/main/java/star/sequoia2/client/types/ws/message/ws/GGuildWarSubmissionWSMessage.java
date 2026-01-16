@@ -18,7 +18,9 @@ public class GGuildWarSubmissionWSMessage extends WSMessage {
             @SerializedName("submitted_at") String submittedAt,
             @SerializedName("start_time") String startTime,
             List<String> warrers,
-            Results results) {}
+            Results results,
+            @SerializedName("sr") int seasonRating,
+            boolean completed) {}
 
     public record Results(Stats stats) {}
 

@@ -1,7 +1,9 @@
 package star.sequoia2.features.impl;
 
 import com.collarmc.pounce.Subscribe;
+import com.wynntils.core.WynntilsMod;
 import com.wynntils.core.components.Models;
+import com.wynntils.models.character.event.CharacterDeathEvent;
 import com.wynntils.models.war.type.WarBattleInfo;
 import com.wynntils.models.war.type.WarTowerState;
 import com.wynntils.utils.type.RangedValue;
@@ -11,33 +13,76 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.regex.Pattern;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
+import net.neoforged.bus.api.SubscribeEvent;
 import star.sequoia2.client.types.ws.message.ws.GGuildWarSubmissionWSMessage;
+import star.sequoia2.events.PacketEvent;
 import star.sequoia2.events.PlayerTickEvent;
 import star.sequoia2.features.ToggleFeature;
 import star.sequoia2.features.impl.ws.WebSocket;
 
 import static star.sequoia2.client.SeqClient.mc;
+import static star.sequoia2.features.impl.ws.ChatHook.clean;
 
 
 public class GuildWarTracker extends ToggleFeature {
 
     private static final double TRACKING_RADIUS_SQ = 120 * 120;
+    private static final Pattern VALID_USERNAME = Pattern.compile("^[a-zA-Z0-9_]{2,16}$");
+    private static final Pattern TERRITORY_CAPTURED = Pattern.compile("(?i)Territory\\s+Captured");
+    private static final Pattern CAPTURED_TERRITORY = Pattern.compile("(?i)Captured\\s+\"([^\"]+)\"");
+    private static final Pattern SEASON_RATING = Pattern.compile("(?i)\\+\\s*(\\d+)\\s+Season(?:al)?\\s+Rating");
 
     private WarContext activeContext;
-    private boolean playerWasDead;
     private String lastProcessedBattleId;
     private int lastProcessedStateHash;
+    private boolean wynnDeathListenerRegistered;
 
     public GuildWarTracker() {
         super("GuildWarTracker", "Tracks guild war results", true);
+    }
+
+    @Override
+    protected void onActivate() {
+        registerWynnDeathListener();
+    }
+
+    @Override
+    protected void onDeactivate() {
+        unregisterWynnDeathListener();
     }
 
     @Subscribe
     public void onPlayerTick(PlayerTickEvent event) {
         if (mc.player == null) return;
         trackWarState();
-        detectPlayerDeath();
+    }
+
+    @SubscribeEvent
+    public void onCharacterDeath(CharacterDeathEvent event) {
+        if (!isActive() || activeContext == null || activeContext.submissionSent) return;
+        requestSubmission(activeContext.info, activeContext, false);
+    }
+
+    @Subscribe
+    public void onChatPacket(PacketEvent.PacketReceiveEvent event) {
+        if (!(event.packet() instanceof GameMessageS2CPacket packet) || packet.overlay()) return;
+        if (activeContext == null || activeContext.submissionSent) return;
+
+        String cleaned = clean(packet.content().getString());
+        if (cleaned.isEmpty() || !TERRITORY_CAPTURED.matcher(cleaned).find()) return;
+
+        Integer sr = parseSeasonRating(cleaned);
+        if (sr == null) return;
+
+        String territory = parseCapturedTerritory(cleaned);
+        if (territory != null && !territoryMatches(activeContext, territory)) return;
+
+        activeContext.seasonRating = sr;
+        activeContext.completedFromChat = true;
+        if (activeContext.pendingSubmission) requestSubmission(activeContext.info, activeContext, false);
     }
 
     private void trackWarState() {
@@ -47,9 +92,7 @@ public class GuildWarTracker extends ToggleFeature {
             int stateHash = hashState(info.getCurrentState());
             if (activeContext != null
                     && battleId.equals(lastProcessedBattleId)
-                    && stateHash == lastProcessedStateHash) {
-                return;
-            }
+                    && stateHash == lastProcessedStateHash) return;
             lastProcessedBattleId = battleId;
             lastProcessedStateHash = stateHash;
 
@@ -65,38 +108,35 @@ public class GuildWarTracker extends ToggleFeature {
 
             activeContext.lastKnownState = info.getCurrentState();
             if (!activeContext.submissionSent && isTowerDestroyed(activeContext.lastKnownState)) {
-                submitWar(info, activeContext);
+                requestSubmission(info, activeContext, false);
             }
         } else if (activeContext != null) {
-            if (!activeContext.submissionSent) {
-                submitWar(activeContext.info, activeContext);
-            }
+            if (!activeContext.submissionSent) requestSubmission(activeContext.info, activeContext, true);
             activeContext = null;
             lastProcessedBattleId = null;
             lastProcessedStateHash = 0;
         }
     }
 
-    private void detectPlayerDeath() {
-        if (activeContext == null || activeContext.submissionSent) {
-            playerWasDead = false;
-            return;
-        }
-        if (mc.player == null) {
-            playerWasDead = false;
-            return;
-        }
-        boolean isDead = mc.player.isDead() || mc.player.getHealth() <= 0;
-        if (!playerWasDead && isDead) {
-            handlePlayerDeath();
-        }
-        playerWasDead = isDead;
+    private void registerWynnDeathListener() {
+        if (wynnDeathListenerRegistered) return;
+        WynntilsMod.registerEventListener(this);
+        wynnDeathListenerRegistered = true;
     }
 
-    private void handlePlayerDeath() {
-        if (activeContext != null && !activeContext.submissionSent) {
-            submitWar(activeContext.info, activeContext);
+    private void unregisterWynnDeathListener() {
+        if (!wynnDeathListenerRegistered) return;
+        WynntilsMod.unregisterEventListener(this);
+        wynnDeathListenerRegistered = false;
+    }
+
+    private void requestSubmission(WarBattleInfo info, WarContext context, boolean force) {
+        if (info == null || context == null || context.submissionSent) return;
+        if (!force && context.seasonRating == null) {
+            context.pendingSubmission = true;
+            return;
         }
+        submitWar(info, context);
     }
 
     private void submitWar(WarBattleInfo info, WarContext context) {
@@ -108,32 +148,43 @@ public class GuildWarTracker extends ToggleFeature {
                 .filter(WebSocket::isActive)
                 .filter(WebSocket::isAuthenticated)
                 .orElse(null);
-        if (webSocket == null || mc.player == null) {
-            return;
-        }
+        if (webSocket == null || mc.player == null) return;
 
-        if (context.warrers.isEmpty()) {
-            context.warrers = collectCurrentWarrers();
-        }
+        if (context.warrers.isEmpty()) context.warrers = collectCurrentWarrers();
 
         List<String> uniqueWarrers = context.warrers.isEmpty()
                 ? List.of(mc.player.getGameProfile().getName())
                 : new ArrayList<>(new LinkedHashSet<>(context.warrers));
+        List<String> validWarrers = uniqueWarrers.stream()
+                .filter(this::isValidUsername)
+                .toList();
+        if (validWarrers.isEmpty()) {
+            String fallback = mc.player.getGameProfile().getName();
+            if (isValidUsername(fallback)) validWarrers = List.of(fallback);
+        }
 
         long submittedAtMillis = System.currentTimeMillis();
         String submittedAt = toRFC3339(submittedAtMillis);
         String startTime = toRFC3339(context.startEpochMs > 0 ? context.startEpochMs : submittedAtMillis);
+        WarTowerState completionState = context.lastKnownState != null
+                ? context.lastKnownState
+                : info.getCurrentState();
+        boolean completed = context.completedFromChat || isTowerDestroyed(completionState);
+        int seasonRating = context.seasonRating != null ? context.seasonRating : 0;
 
         GGuildWarSubmissionWSMessage.Data data = new GGuildWarSubmissionWSMessage.Data(
                 summary.territory(),
                 mc.player.getUuidAsString(),
                 submittedAt,
                 startTime,
-                uniqueWarrers,
-                new GGuildWarSubmissionWSMessage.Results(toWsStats(summary.stats())));
+                validWarrers,
+                new GGuildWarSubmissionWSMessage.Results(toWsStats(summary.stats())),
+                seasonRating,
+                completed);
 
         webSocket.sendMessage(new GGuildWarSubmissionWSMessage(data));
         context.submissionSent = true;
+        context.pendingSubmission = false;
     }
 
     private WarSummary buildSummary(WarBattleInfo info) {
@@ -219,9 +270,7 @@ public class GuildWarTracker extends ToggleFeature {
     }
 
     private int hashState(WarTowerState state) {
-        if (state == null) {
-            return 0;
-        }
+        if (state == null) return 0;
         long damageLow = state.damage() == null ? 0 : state.damage().low();
         long damageHigh = state.damage() == null ? 0 : state.damage().high();
         int hash = Long.hashCode(damageLow);
@@ -233,12 +282,45 @@ public class GuildWarTracker extends ToggleFeature {
         return hash;
     }
 
+    private boolean isValidUsername(String name) {
+        return name != null && VALID_USERNAME.matcher(name).matches();
+    }
+
+    private static Integer parseSeasonRating(String cleaned) {
+        if (cleaned == null) return null;
+        java.util.regex.Matcher matcher = SEASON_RATING.matcher(cleaned);
+        if (!matcher.find()) return null;
+        try {
+            return Integer.parseInt(matcher.group(1));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private static String parseCapturedTerritory(String cleaned) {
+        if (cleaned == null) return null;
+        java.util.regex.Matcher matcher = CAPTURED_TERRITORY.matcher(cleaned);
+        if (!matcher.find()) return null;
+        String territory = matcher.group(1);
+        return territory == null ? null : territory.trim();
+    }
+
+    private static boolean territoryMatches(WarContext context, String territory) {
+        if (context == null || territory == null) return false;
+        String expected = context.info != null ? context.info.getTerritory() : null;
+        if (expected == null || expected.isBlank()) return true;
+        return expected.equalsIgnoreCase(territory.trim());
+    }
+
     private static final class WarContext {
         private final String id;
         private WarBattleInfo info;
         private final long startEpochMs;
         private List<String> warrers;
         private WarTowerState lastKnownState;
+        private Integer seasonRating;
+        private boolean pendingSubmission;
+        private boolean completedFromChat;
         private boolean submissionSent;
 
         private WarContext(String id, WarBattleInfo info, long startEpochMs, List<String> warrers) {

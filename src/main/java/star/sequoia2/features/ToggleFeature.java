@@ -3,6 +3,7 @@ package star.sequoia2.features;
 import star.sequoia2.accessors.EventBusAccessor;
 import star.sequoia2.accessors.NotificationsAccessor;
 import star.sequoia2.accessors.SettingsAccessor;
+import star.sequoia2.accessors.SoundUtilAccessor;
 import star.sequoia2.configuration.JsonCompound;
 import star.sequoia2.events.ModuleChangedEvent;
 import star.sequoia2.settings.Binding;
@@ -15,7 +16,7 @@ import net.minecraft.util.Formatting;
 
 import java.util.Optional;
 
-public abstract class ToggleFeature extends Feature implements SettingsAccessor, EventBusAccessor, NotificationsAccessor {
+public abstract class ToggleFeature extends Feature implements SettingsAccessor, EventBusAccessor, NotificationsAccessor, SoundUtilAccessor {
 
     private static final String ACTIVE = "active";
 
@@ -41,6 +42,7 @@ public abstract class ToggleFeature extends Feature implements SettingsAccessor,
             active = true;
             onActivate();
             subscribe(this);
+            soundUtil().playEnableSound();
             dispatch(new ModuleChangedEvent(this));
         }
     }
@@ -50,6 +52,7 @@ public abstract class ToggleFeature extends Feature implements SettingsAccessor,
             active = false;
             onDeactivate();
             unsubscribe(this);
+            soundUtil().playDisableSound();
             dispatch(new ModuleChangedEvent(this));
         }
     }
@@ -63,11 +66,9 @@ public abstract class ToggleFeature extends Feature implements SettingsAccessor,
             if (active) {
                 active = false;
                 deactivate();
-                //getSoundUtil().playDisableSound();
             } else {
                 active = true;
                 activate();
-                //getSoundUtil().playEnableSound();
             }
             notify(Text.of(active ? this.name + Formatting.GREEN + " on" : this.name + Formatting.RED + " off"), this.name);
         }
