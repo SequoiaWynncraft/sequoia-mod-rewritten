@@ -25,9 +25,10 @@ import star.sequoia2.features.impl.ws.WebSocket;
 import star.sequoia2.gui.Fonts;
 import star.sequoia2.gui.categories.Categories;
 import star.sequoia2.hud.HUDElements;
-import star.sequoia2.hud.elements.GolemusTracker;
+import star.sequoia2.hud.elements.RaidRoomTracker;
 import star.sequoia2.hud.positions.UIPositions;
 import star.sequoia2.settings.SettingsState;
+import star.sequoia2.utils.SoundUtil;
 import star.sequoia2.utils.TickScheduler;
 import star.sequoia2.utils.cache.Threading;
 import star.sequoia2.utils.chatparser.GuildMessageParser;
@@ -116,6 +117,9 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
     @Getter
     private static HUDElements hudElements;
 
+    @Getter
+    private static SoundUtil soundUtil;
+
     @Override
     public void onInitializeClient() {
         LOGGER.info("Initializing Seq client.");
@@ -145,6 +149,7 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
         themes = new Themes();
 
         notifications = new Notifications();
+        soundUtil = new SoundUtil();
         render2DUtil = new Render2DUtil();
         render3DUtil = new Render3DUtil();
 
@@ -207,7 +212,7 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
     }
 
     private void registerHUDElements() {
-        hudElements.add(new GolemusTracker());
+        hudElements.add(new RaidRoomTracker());
     }
 
     public static final ScheduledExecutorService SCHEDULER =

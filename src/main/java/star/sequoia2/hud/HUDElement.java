@@ -4,10 +4,7 @@ import com.google.gson.JsonArray;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.gui.DrawContext;
-import star.sequoia2.accessors.EventBusAccessor;
-import star.sequoia2.accessors.FeaturesAccessor;
-import star.sequoia2.accessors.RenderUtilAccessor;
-import star.sequoia2.accessors.SettingsAccessor;
+import star.sequoia2.accessors.*;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.configuration.JSONConfiguration;
 import star.sequoia2.configuration.JsonCompound;
@@ -23,7 +20,7 @@ import java.io.IOException;
 
 import static star.sequoia2.client.SeqClient.mc;
 
-public abstract class HUDElement extends InteractableComponent implements JSONConfiguration, FeaturesAccessor, EventBusAccessor, SettingsAccessor, RenderUtilAccessor {
+public abstract class HUDElement extends InteractableComponent implements JSONConfiguration, FeaturesAccessor, EventBusAccessor, SettingsAccessor, RenderUtilAccessor, SoundUtilAccessor {
 
     public static final String CONFIG = "hud";
 
@@ -82,6 +79,7 @@ public abstract class HUDElement extends InteractableComponent implements JSONCo
             active = true;
             onActivate();
             subscribe(this);
+            soundUtil().playEnableSound();
             dispatch(new HudElementChanged(this));
         }
     }
@@ -91,6 +89,7 @@ public abstract class HUDElement extends InteractableComponent implements JSONCo
             active = false;
             unsubscribe(this);
             onDeactivate();
+            soundUtil().playDisableSound();
             dispatch(new HudElementChanged(this));
         }
     }
