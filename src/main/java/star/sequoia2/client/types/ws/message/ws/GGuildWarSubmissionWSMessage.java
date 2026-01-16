@@ -19,7 +19,7 @@ public class GGuildWarSubmissionWSMessage extends WSMessage {
             @SerializedName("start_time") String startTime,
             List<String> warrers,
             Results results,
-            int seasonRating,
+            @SerializedName("sr") int seasonRating,
             boolean completed) {}
 
     public record Results(Stats stats) {}
