@@ -68,7 +68,7 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
     public static boolean testMode = false;
 
     @Getter
-    private static boolean debugMode = true;
+    private static boolean debugMode = false;
 
     public static final MinecraftClient mc = MinecraftClient.getInstance();
 

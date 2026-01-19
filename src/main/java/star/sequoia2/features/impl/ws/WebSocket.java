@@ -121,8 +121,10 @@ public class WebSocket extends ToggleFeature {
 
             @Override
             public void onClose(int i, String s, boolean b) {
-                SeqClient.debug("WebSocket connection closed. Code: " + i
-                        + (StringUtils.isNotBlank(s) ? ", Reason: " + s : ""));
+                if (!isSocketClosedReason(s)) {
+                    SeqClient.debug("WebSocket connection closed. Code: " + i
+                            + (StringUtils.isNotBlank(s) ? ", Reason: " + s : ""));
+                }
                 closeIfNeeded();
                 tryReconnect(true);
             }
@@ -135,7 +137,7 @@ public class WebSocket extends ToggleFeature {
                 }
                 reconnectPending = false;
 
-                if (SeqClient.isDebugMode() || !isSocketClosed(e)) {
+                if (!isSocketClosed(e)) {
                     SeqClient.error("Error occurred in WebSocket connection", e);
                 }
                 setAuthenticating(false);
@@ -359,6 +361,10 @@ public class WebSocket extends ToggleFeature {
         if (!(e instanceof SocketException)) return false;
         String message = e.getMessage();
         return StringUtils.equalsIgnoreCase(message, "Socket closed");
+    }
+
+    private static boolean isSocketClosedReason(String reason) {
+        return StringUtils.equalsIgnoreCase(reason, "Socket closed");
     }
 
 }
