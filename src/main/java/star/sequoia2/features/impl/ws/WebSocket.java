@@ -20,6 +20,7 @@ import star.sequoia2.utils.AccessTokenManager;
 import star.sequoia2.utils.wynn.WynnUtils;
 
 import java.net.URI;
+import java.net.SocketException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -134,7 +135,9 @@ public class WebSocket extends ToggleFeature {
                 }
                 reconnectPending = false;
 
-                SeqClient.error("Error occurred in WebSocket connection", e);
+                if (SeqClient.isDebugMode() || !isSocketClosed(e)) {
+                    SeqClient.error("Error occurred in WebSocket connection", e);
+                }
                 setAuthenticating(false);
                 setAuthenticated(false);
                 if (StringUtils.equals(e.getMessage(), "java.net.ConnectException: Connection refused: connect")) {
@@ -350,6 +353,12 @@ public class WebSocket extends ToggleFeature {
         // too short to safely reveal 4+4; show first/last char only if possible
         if (len > 2) return s.substring(0, 1) + "..." + s.substring(len - 1);
         return "...";
+    }
+
+    private static boolean isSocketClosed(Exception e) {
+        if (!(e instanceof SocketException)) return false;
+        String message = e.getMessage();
+        return StringUtils.equalsIgnoreCase(message, "Socket closed");
     }
 
 }
