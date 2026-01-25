@@ -3,6 +3,7 @@ package star.sequoia2.gui.categories.impl;
 import mil.nga.color.Color;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.math.MatrixStack;
+import org.joml.Matrix3x2fStack;
 import org.lwjgl.glfw.GLFW;
 import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.accessors.RenderUtilAccessor;
@@ -116,8 +117,8 @@ public class SettingsCategory extends RelativeComponent implements RenderUtilAcc
             scrollOffset += (targetScrollOffset - scrollOffset) * k;
         }
 
-        MatrixStack matrices = context.getMatrices();
-        matrices.push();
+        Matrix3x2fStack matrices = context.getMatrices();
+        matrices.pushMatrix();
         context.enableScissor((int) viewportX, (int) viewportY, (int) (viewportX + viewportW), (int) (viewportY + viewportH));
 
         float offsetY = 0f;
@@ -134,7 +135,7 @@ public class SettingsCategory extends RelativeComponent implements RenderUtilAcc
         }
 
         context.disableScissor();
-        matrices.pop();
+        matrices.popMatrix();
 
         if (totalContent > viewportH && trackH > 0f) {
             float thumbH = 20f;

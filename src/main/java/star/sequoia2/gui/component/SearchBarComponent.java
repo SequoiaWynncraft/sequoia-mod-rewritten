@@ -45,13 +45,13 @@ public class SearchBarComponent extends RelativeComponent implements TextRendere
 
         float scale = 1.5f;
 
-        context.getMatrices().push();
-        context.getMatrices().translate(contentX() + (contentWidth() / 2) - (textRenderer().getWidth(display)), contentY() + (contentHeight() / 2) - textRenderer().fontHeight, 0);
-        context.getMatrices().scale(scale, scale, 1.0f);
+        context.getMatrices().pushMatrix();
+        context.getMatrices().translate(contentX() + (contentWidth() / 2) - (textRenderer().getWidth(display)), contentY() + (contentHeight() / 2) - textRenderer().fontHeight);
+        context.getMatrices().scale(scale, scale);
 
         render2DUtil().drawText(context, display + (showCaret ? "_" : ""), 0, 0, textColor, true);
 
-        context.getMatrices().pop();
+        context.getMatrices().popMatrix();
 
         context.disableScissor();
     }

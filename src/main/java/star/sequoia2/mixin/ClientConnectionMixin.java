@@ -2,7 +2,6 @@ package star.sequoia2.mixin;
 
 import io.netty.channel.ChannelHandlerContext;
 import net.minecraft.network.ClientConnection;
-import net.minecraft.network.PacketCallbacks;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.listener.PacketListener;
 import net.minecraft.network.packet.Packet;
@@ -20,8 +19,8 @@ import java.util.Iterator;
 @Mixin(ClientConnection.class)
 public class ClientConnectionMixin implements EventBusAccessor {
 
-    @Inject(at = @At("HEAD"), method = "send(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/PacketCallbacks;)V", cancellable = true)
-    private void onSendPacketHead(Packet<?> packet, PacketCallbacks callbacks, CallbackInfo ci) {
+    @Inject(at = @At("HEAD"), method = "send(Lnet/minecraft/network/packet/Packet;)V", cancellable = true)
+    private void onSendPacketHead(Packet<?> packet, CallbackInfo ci) {
         dispatch(new PacketEvent.PacketSendEvent(packet), event -> ci.cancel());
     }
 

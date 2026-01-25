@@ -5,8 +5,8 @@ import mil.nga.color.Color;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.client.network.OtherClientPlayerEntity;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.util.math.MatrixStack;
+import org.joml.Matrix3x2fStack;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import star.sequoia2.accessors.RenderUtilAccessor;
@@ -46,7 +46,7 @@ public class PlayerLookupCategory extends RelativeComponent implements RenderUti
         float top = contentY();
         float right = left + contentWidth();
         float bottom = top + contentHeight();
-        MatrixStack matrices = context.getMatrices();
+        Matrix3x2fStack matrices = context.getMatrices();
 
         Color normal = features().get(Settings.class).map(Settings::getThemeNormal).orElse(Color.black());
         Color dark = features().get(Settings.class).map(Settings::getThemeDark).orElse(Color.black());
@@ -63,11 +63,24 @@ public class PlayerLookupCategory extends RelativeComponent implements RenderUti
         Color enterStart = hoverEnter ? light : normal;
         render2DUtil().roundRectFilled(context.getMatrices(), right - 25f, top, right, top + getGuiRoot().btnH, getGuiRoot().rounding, enterStart);
 
-        matrices.push();
-        matrices.translate(right - 25f, top, 0);
-        context.drawTexture(RenderLayer::getGuiTextured, TextureStorage.enter, 0, 0, 0, 0, (int) getGuiRoot().btnH, (int) getGuiRoot().btnH, (int) getGuiRoot().btnH, (int) getGuiRoot().btnH,
-                hoverEnter ? new java.awt.Color(dark.getRed(), dark.getGreen(), dark.getBlue(), dark.getAlpha()).getRGB() : new java.awt.Color(light.getRed(), light.getGreen(), light.getBlue(), light.getAlpha()).getRGB());
-        matrices.pop();
+        matrices.pushMatrix();
+        matrices.translate(right - 25f, top);
+        context.drawTexture(
+                net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED,
+                TextureStorage.enter,
+                0,
+                0,
+                0f,
+                0f,
+                (int) getGuiRoot().btnH,
+                (int) getGuiRoot().btnH,
+                (int) getGuiRoot().btnH,
+                (int) getGuiRoot().btnH,
+                hoverEnter
+                        ? new java.awt.Color(dark.getRed(), dark.getGreen(), dark.getBlue(), dark.getAlpha()).getRGB()
+                        : new java.awt.Color(light.getRed(), light.getGreen(), light.getBlue(), light.getAlpha()).getRGB()
+        );
+        matrices.popMatrix();
 
         if (currentPlayer != null) {
             String username = currentPlayer.getUsername();

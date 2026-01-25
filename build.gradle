@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '1.11-SNAPSHOT'
+    id 'fabric-loom' version '1.15-SNAPSHOT'
     id 'maven-publish'
     id 'io.freefair.lombok' version '8.11'
 }
@@ -7,13 +7,12 @@ import groovy.json.JsonOutput
 import java.nio.charset.StandardCharsets
 
 def gitOut = { List<String> args ->
-    def baos = new ByteArrayOutputStream()
-    exec {
-        workingDir rootDir
-        commandLine(['git'] + args)
-        standardOutput = baos
-    }
-    return baos.toString(StandardCharsets.UTF_8.name()).trim()
+    def process = new ProcessBuilder(['git'] + args)
+            .directory(rootDir)
+            .redirectErrorStream(true)
+            .start()
+    process.waitFor()
+    return process.inputStream.getText(StandardCharsets.UTF_8.name()).trim()
 }
 
 def commitHash = gitOut(['rev-parse', '--short', 'HEAD'])
@@ -87,6 +86,8 @@ dependencies {
 
     //devauth
     modRuntimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
+    // Needed for DevAuth: provides org.apache.http.client.methods.HttpUriRequest
+    implementation("org.apache.httpcomponents:httpclient:4.5.14")
 }
 
 processResources {

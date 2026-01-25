@@ -163,7 +163,7 @@ public class WebSocket extends ToggleFeature {
             return null;
         }
 
-        if (!isAuthenticating && !isAuthenticated && (Models.WorldState.onWorld() || Models.WorldState.onHousing())) {
+        if (!isAuthenticating && !isAuthenticated && (Models.WorldState.onWorld())) {
             authenticate();
             return null;
         }

@@ -1,6 +1,8 @@
 package star.sequoia2.mixin;
 
 import com.llamalad7.mixinextras.sugar.Local;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import org.joml.Vector4f;
 import star.sequoia2.accessors.EventBusAccessor;
 import star.sequoia2.events.Render3DEvent;
 import net.minecraft.client.render.Camera;
@@ -22,7 +24,7 @@ import static star.sequoia2.client.SeqClient.mc;
 @Mixin(WorldRenderer.class)
 public class WorldRendererMixin implements EventBusAccessor {
     @Inject(method = "render", at = @At("RETURN"))
-    private void render(ObjectAllocator allocator, RenderTickCounter tickCounter, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, Matrix4f positionMatrix, Matrix4f projectionMatrix, CallbackInfo ci, @Local Profiler profiler) {
+    private void render(ObjectAllocator allocator, RenderTickCounter tickCounter, boolean renderBlockOutline, Camera camera, Matrix4f positionMatrix, Matrix4f basicProjectionMatrix, Matrix4f projectionMatrix, GpuBufferSlice fogBuffer, Vector4f fogColor, boolean renderSky, CallbackInfo ci, @Local Profiler profiler) {
         MatrixStack stack = new MatrixStack();
         stack.push();
         stack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(mc.gameRenderer.getCamera().getPitch()));
@@ -30,7 +32,7 @@ public class WorldRendererMixin implements EventBusAccessor {
 
         profiler.push("seq-render-3d");
 
-        dispatch(new Render3DEvent(stack, tickCounter.getTickDelta(true)));
+        dispatch(new Render3DEvent(stack, tickCounter.getTickProgress(true)));
         stack.pop();
         profiler.pop();
     }

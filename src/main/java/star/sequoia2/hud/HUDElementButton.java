@@ -99,13 +99,13 @@ public class HUDElementButton extends InteractableComponent implements FeaturesA
         Color bgEnd = hovering ? accent1 : accent3;
         render2DUtil().roundGradientFilled(context.getMatrices(), left, top, right, bottom, root.rounding, bgEnd, accent1, true);
 
-        context.getMatrices().push();
-        context.getMatrices().translate(left + root.pad, top + textRenderer().fontHeight, 0);
-        context.getMatrices().scale(1.1f, 1.1f, 0);
+        context.getMatrices().pushMatrix();
+        context.getMatrices().translate(left + root.pad, top + textRenderer().fontHeight);
+        context.getMatrices().scale(1.1f, 1.1f);
 
         int textColor = hudElement.isActive() ? accent2.getColor() : light.getColor();
         renderText(context, hudElement.name, 0, 0 - (float) textRenderer().fontHeight / 2, textColor, true);
-        context.getMatrices().pop();
+        context.getMatrices().popMatrix();
 
         String symbol = open ? "-" : "+";
         renderText(context, symbol, right - root.pad - textRenderer().getWidth(symbol), top + (height - textRenderer().fontHeight) / 2f, accent2.getColor(), true);

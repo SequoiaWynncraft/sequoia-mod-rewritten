@@ -1,6 +1,7 @@
 package star.sequoia2.gui.screen;
 
 import lombok.Setter;
+import net.minecraft.client.gui.Click;
 import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.accessors.RenderUtilAccessor;
 import star.sequoia2.gui.categories.Categories;
@@ -8,6 +9,8 @@ import star.sequoia2.gui.component.ScissorStack;
 import lombok.Getter;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.input.KeyInput;
+import net.minecraft.client.input.CharInput;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
@@ -59,33 +62,43 @@ public class ClickGUIScreen extends Screen implements FeaturesAccessor, RenderUt
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int mouseButton) {
-        double[] scaled = getScaledMouse(mouseX, mouseY);
-        mouseX = scaled[0];
-        mouseY = scaled[1];
-        if (mouseButton == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+    public boolean mouseClicked(Click click, boolean outsideScreen) {
+        double mx = click.x();
+        double my = click.y();
+        int button = click.button();
+        double[] scaled = getScaledMouse(mx, my);
+        mx = scaled[0];
+        my = scaled[1];
+
+        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             MOUSE_LEFT_CLICK = true;
             MOUSE_LEFT_HOLD = true;
-        } else if (mouseButton == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+        } else if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
             MOUSE_RIGHT_CLICK = true;
             MOUSE_RIGHT_HOLD = true;
         }
-        if (root != null) root.mouseClicked((float) mouseX, (float) mouseY, mouseButton);
-        return super.mouseClicked(mouseX, mouseY, mouseButton);
+
+        if (root != null) root.mouseClicked((float) mx, (float) my, button);
+        return super.mouseClicked(click, outsideScreen);
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        double[] scaled = getScaledMouse(mouseX, mouseY);
-        mouseX = scaled[0];
-        mouseY = scaled[1];
-        if (button == 0) {
+    public boolean mouseReleased(Click click) {
+        double mx = click.x();
+        double my = click.y();
+        int button = click.button();
+        double[] scaled = getScaledMouse(mx, my);
+        mx = scaled[0];
+        my = scaled[1];
+
+        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             MOUSE_LEFT_HOLD = false;
-        } else if (button == 1) {
+        } else if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
             MOUSE_RIGHT_HOLD = false;
         }
-        if (root != null) root.mouseReleased((float) mouseX, (float) mouseY, button);
-        return super.mouseReleased(mouseX, mouseY, button);
+
+        if (root != null) root.mouseReleased((float) mx, (float) my, button);
+        return super.mouseReleased(click);
     }
 
     @Override
@@ -108,10 +121,10 @@ public class ClickGUIScreen extends Screen implements FeaturesAccessor, RenderUt
         openScale = Math.min(base, openScale + delta);
         float appliedScale = Math.max(0.0001f, openScale / sf);
 
-        context.getMatrices().push();
+        context.getMatrices().pushMatrix();
         float scaledHeight = (context.getScaledWindowHeight() / appliedScale);
         float scaledWidth = (context.getScaledWindowWidth() / appliedScale);
-        context.getMatrices().scale(appliedScale, appliedScale, 1.0f);
+        context.getMatrices().scale(appliedScale, appliedScale);
 
         if (root != null) {
             root.setPos(0, 0);
@@ -124,25 +137,34 @@ public class ClickGUIScreen extends Screen implements FeaturesAccessor, RenderUt
         MOUSE_RIGHT_CLICK = false;
         MOUSE_X = fixedMouseX;
         MOUSE_Y = fixedMouseY;
-        context.getMatrices().pop();
+
+        context.getMatrices().popMatrix();
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyInput input) {
+        int keyCode = input.getKeycode();
+        int scanCode = input.scancode();
+        int modifiers = input.modifiers();
         if (root != null) root.keyPressed(keyCode, scanCode, modifiers);
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(input);
     }
 
     @Override
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+    public boolean keyReleased(KeyInput input) {
+        int keyCode = input.getKeycode();
+        int scanCode = input.scancode();
+        int modifiers = input.modifiers();
         if (root != null) root.keyReleased(keyCode, scanCode, modifiers);
-        return super.keyReleased(keyCode, scanCode, modifiers);
+        return super.keyReleased(input);
     }
 
     @Override
-    public boolean charTyped(char chr, int modifiers) {
+    public boolean charTyped(CharInput input) {
+        char chr = (char) input.codepoint();
+        int modifiers = input.modifiers();
         if (root != null) root.charTyped(chr, modifiers);
-        return super.charTyped(chr, modifiers);
+        return super.charTyped(input);
     }
 
     @Override

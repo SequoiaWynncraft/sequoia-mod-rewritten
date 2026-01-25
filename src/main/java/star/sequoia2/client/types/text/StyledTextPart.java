@@ -9,11 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
+
+import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
@@ -196,7 +193,7 @@ public final class StyledTextPart {
                     }
 
                     if (jsonObject.has("font")) {
-                        style = style.withFont(Identifier.ofVanilla(jsonObject.get("font").getAsString()));
+                        style = style.withFont(new StyleSpriteSource.Font(Identifier.ofVanilla(jsonObject.get("font").getAsString())));
                     }
 
                     if (jsonObject.has("color")) {

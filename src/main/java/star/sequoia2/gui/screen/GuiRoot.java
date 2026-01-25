@@ -2,6 +2,7 @@ package star.sequoia2.gui.screen;
 
 import lombok.Getter;
 import net.minecraft.client.util.math.MatrixStack;
+import org.joml.Matrix3x2fStack;
 import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.accessors.RenderUtilAccessor;
 import star.sequoia2.accessors.TextRendererAccessor;
@@ -54,7 +55,7 @@ public final class GuiRoot implements RenderUtilAccessor, TextRendererAccessor, 
     }
 
     public void render(DrawContext context, float mouseX, float mouseY, float delta) {
-        MatrixStack matrices = context.getMatrices();
+        Matrix3x2fStack matrices = context.getMatrices();
         float bx = (uiW - boxWidth) / 2f;
         float by = (uiH - boxHeight) / 2f;
 
@@ -80,11 +81,11 @@ public final class GuiRoot implements RenderUtilAccessor, TextRendererAccessor, 
 
         render2DUtil().roundGradientFilled(matrices, bx, by, bx + boxWidth, by + boxHeight, rounding, dark, dark, false);
 
-        matrices.push();
+        matrices.pushMatrix();
         context.enableScissor((int) bx, (int) by, (int) (bx + menuW), (int) (by + boxHeight));
         render2DUtil().roundGradientFilled(matrices, bx, by, bx + boxWidth, by + boxHeight, rounding, dark, normal, false);
         context.disableScissor();
-        matrices.pop();
+        matrices.popMatrix();
 
         float logoX = bx + (menuW - btnW) / 2f;
         float logoY = by + pad;

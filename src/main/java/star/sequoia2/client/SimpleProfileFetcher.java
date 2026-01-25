@@ -20,19 +20,17 @@ public class SimpleProfileFetcher {
     ApiServices services;
 
     public SimpleProfileFetcher() {
-        if (mc.authenticationService != null) {
-            services = ApiServices.create(mc.authenticationService, mc.runDirectory);
-        }
+        services = mc.getApiServices();
     }
 
     public CompletableFuture<Optional<GameProfile>> fetchByUUID(UUID id) {
-        if (services == null || mc.getSessionService() == null || id == null)
+        if (services == null || id == null)
             return EMPTY;
         CompletableFuture<Optional<GameProfile>> future = BY_ID.computeIfAbsent(id, uuid ->
                 CompletableFuture.supplyAsync(() -> {
-                    ProfileResult res = services.sessionService().fetchProfile(uuid, true);
-                    return Optional.ofNullable(res).map(ProfileResult::profile);
-                }, Util.getMainWorkerExecutor())
+                            ProfileResult res = services.sessionService().fetchProfile(uuid, true);
+                            return Optional.ofNullable(res).map(ProfileResult::profile);
+                        }, Util.getMainWorkerExecutor())
                         .whenComplete((profile, throwable) -> trimCache()));
         return future;
     }

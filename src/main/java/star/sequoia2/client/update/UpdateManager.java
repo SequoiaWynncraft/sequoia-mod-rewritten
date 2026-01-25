@@ -176,12 +176,9 @@ public final class UpdateManager {
         String storedSignature = UPDATE_STATE.lastInstalledSignature(release.channel());
         String currentSignature = release.signature();
         if (tag.equalsIgnoreCase(local)) return false;
-        // Prefer signature comparison when available (static tags reuse the same tag name).
         if (storedSignature != null) {
             return !currentSignature.equals(storedSignature);
         }
-        // Legacy installs only stored the tag. If the tag matches, still treat it as newer so we refresh
-        // and start writing signatures going forward.
         if (storedTag != null && tag.equalsIgnoreCase(storedTag)) {
             return true;
         }
@@ -194,8 +191,8 @@ public final class UpdateManager {
                 .append(Text.literal(release.displayVersion()).formatted(Formatting.AQUA))
                 .append(Text.literal(" – click to install").formatted(Formatting.GRAY))
                 .styled(style -> style
-                        .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/sequpdate install"))
-                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                        .withClickEvent(new ClickEvent.RunCommand("/sequpdate install"))
+                        .withHoverEvent(new HoverEvent.ShowText(
                                 Text.literal("Download and install the latest Sequoia build"))));
 
         notifyUser(text);

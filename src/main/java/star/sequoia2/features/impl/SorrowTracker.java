@@ -1,14 +1,16 @@
 package star.sequoia2.features.impl;
 
 import com.collarmc.pounce.Subscribe;
-import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.gl.ShaderProgramKeys;
-import net.minecraft.client.render.*;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.network.packet.s2c.play.PlaySoundS2CPacket;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Arm;
 import net.minecraft.util.math.Vec3d;
+import org.joml.Matrix3x2fStack;
 import org.joml.Matrix4f;
 import star.sequoia2.accessors.RenderUtilAccessor;
 import star.sequoia2.accessors.TextRendererAccessor;
@@ -23,9 +25,6 @@ import star.sequoia2.settings.types.ColorSetting;
 import star.sequoia2.settings.types.FloatSetting;
 import star.sequoia2.settings.types.KeybindSetting;
 import star.sequoia2.utils.Timer;
-import star.sequoia2.utils.render.TextureStorage;
-
-import java.awt.*;
 
 import static star.sequoia2.client.SeqClient.mc;
 
@@ -92,12 +91,12 @@ public class SorrowTracker extends ToggleFeature implements RenderUtilAccessor, 
         float x = (w - tw) / 2f + xOffset.get();
         float y = h / 2f - 4 + yOffset.get();
 
-        MatrixStack matrices = event.context().getMatrices();
-        matrices.push();
+        Matrix3x2fStack matrices = event.context().getMatrices();
+        matrices.pushMatrix();
         float s = scale.get();
-        matrices.scale(s, s, 1f);
+        matrices.scale(s, s);
         render2DUtil().drawText(event.context(), text, x / s, y / s, packed, true);
-        matrices.pop();
+        matrices.popMatrix();
     }
 
     @Subscribe
@@ -107,7 +106,7 @@ public class SorrowTracker extends ToggleFeature implements RenderUtilAccessor, 
 
         float delta = render3DUtil().getTickDelta();
 
-        Vec3d stomach = render3DUtil().lerp(mc.player.getLastRenderPos().add(0, 1, 0), mc.player.getPos().add(0, 1, 0), delta);
+        Vec3d stomach = render3DUtil().lerp(mc.player.getLastRenderPos().add(0, 1, 0), mc.player.getEntityPos().add(0, 1, 0), delta);
 
         Vec3d forward = mc.player.getRotationVec(delta).normalize();
 
@@ -175,13 +174,6 @@ public class SorrowTracker extends ToggleFeature implements RenderUtilAccessor, 
         Vec3d p2 = center.add(ur.multiply( radius)).add(vr.multiply(-radius));
         Vec3d p3 = center.add(ur.multiply(-radius)).add(vr.multiply(-radius));
 
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.enableDepthTest();
-        RenderSystem.depthMask(false);
-        RenderSystem.setShaderTexture(0, TextureStorage.circle);
-        RenderSystem.setShader(ShaderProgramKeys.POSITION_TEX_COLOR);
-
         BufferBuilder buffer = Tessellator.getInstance().begin(
                 VertexFormat.DrawMode.QUADS,
                 VertexFormats.POSITION_TEXTURE_COLOR
@@ -191,18 +183,12 @@ public class SorrowTracker extends ToggleFeature implements RenderUtilAccessor, 
         matrices.push();
 
         Matrix4f mat = matrices.peek().getPositionMatrix();
-        Vec3d cam = mc.getEntityRenderDispatcher().camera.getPos();
+        Vec3d cam = mc.getEntityRenderDispatcher().camera.getCameraPos();
         buffer.vertex(mat, (float)(p0.x - cam.x), (float)(p0.y - cam.y), (float)(p0.z - cam.z)).texture(0, 1).color(packedColor);
         buffer.vertex(mat, (float)(p1.x - cam.x), (float)(p1.y - cam.y), (float)(p1.z - cam.z)).texture(1, 1).color(packedColor);
         buffer.vertex(mat, (float)(p2.x - cam.x), (float)(p2.y - cam.y), (float)(p2.z - cam.z)).texture(1, 0).color(packedColor);
         buffer.vertex(mat, (float)(p3.x - cam.x), (float)(p3.y - cam.y), (float)(p3.z - cam.z)).texture(0, 0).color(packedColor);
 
         matrices.pop();
-
-        BufferRenderer.drawWithGlobalProgram(buffer.end());
-
-        RenderSystem.depthMask(true);
-        RenderSystem.disableBlend();
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
     }
 }

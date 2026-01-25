@@ -31,7 +31,7 @@ public class SoundUtil implements FeaturesAccessor {
     public void playSound(SoundEvent sound) {
         featureIfPresent(Settings.class, sounds -> {
             if (mc.getSoundManager() != null) {
-                mc.getSoundManager().play(PositionedSoundInstance.master(sound, 1f, sounds.getVolume().get() / 100f));
+                mc.getSoundManager().play(PositionedSoundInstance.ui(sound, 1f, sounds.getVolume().get() / 100f));
             }
         });
     }

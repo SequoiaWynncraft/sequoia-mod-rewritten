@@ -191,7 +191,7 @@ public class ChatHook extends ToggleFeature implements GuildParserAccessor, TeXP
             if (wsFeature.map(WebSocket::getConnectOnJoin).map(BooleanSetting::get).orElse(false)
                     && !wsAuthenticated
                     && mc.player != null) {
-                mc.player.networkHandler.sendCommand("seqconnect");
+                mc.player.networkHandler.sendChatCommand("seqconnect");
             }
             return;
         }

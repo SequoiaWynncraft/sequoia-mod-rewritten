@@ -1,5 +1,6 @@
 package star.sequoia2.mixin;
 
+import net.minecraft.client.input.MouseInput;
 import star.sequoia2.accessors.EventBusAccessor;
 import star.sequoia2.events.input.MouseButtonEvent;
 import star.sequoia2.events.input.MouseCursorPosEvent;
@@ -14,8 +15,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Mouse.class)
 public class MouseMixin implements EventBusAccessor {
     @Inject(method = "onMouseButton", at = @At(value = "HEAD"), cancellable = true)
-    private void onMouseButton(long window, int button, int action, int mods, CallbackInfo ci) {
-        dispatch(new MouseButtonEvent(window, button, action, mods), o -> ci.cancel());
+    private void onMouseButton(long window, MouseInput input, int action, CallbackInfo ci) {
+        dispatch(new MouseButtonEvent(window, input.button(), action, input.modifiers()), o -> ci.cancel());
     }
 
     @Inject(method = "onCursorPos", at = @At(value = "HEAD"), cancellable = true)

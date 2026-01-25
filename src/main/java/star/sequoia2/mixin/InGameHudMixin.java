@@ -15,6 +15,6 @@ public class InGameHudMixin implements EventBusAccessor {
 
     @Inject(method = "render", at = @At("TAIL"))
     private void onRender(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
-        dispatch(new Render2DEvent(context, tickCounter.getTickDelta(true)));
+        dispatch(new Render2DEvent(context, tickCounter.getTickProgress(true)));
     }
 }

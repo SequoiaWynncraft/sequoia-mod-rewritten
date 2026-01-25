@@ -5,6 +5,7 @@ import com.mojang.logging.LogUtils;
 import star.sequoia2.accessors.ConfigurationAccessor;
 import star.sequoia2.settings.types.Option;
 import net.minecraft.client.font.*;
+import net.minecraft.text.StyleSpriteSource;
 import net.minecraft.util.Identifier;
 import org.apache.commons.compress.utils.FileNameUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -101,10 +102,27 @@ public class Fonts implements ConfigurationAccessor {
             List<net.minecraft.client.font.Font.FontFilterPair> filters = new ArrayList<>();
             filters.add(new net.minecraft.client.font.Font.FontFilterPair(ttfFont, FontFilterType.FilterMap.NO_FILTER));
 
-            FontStorage fontStorage = new FontStorage(mc.getTextureManager(), Identifier.of("seq", "font/" + fontKey.toLowerCase()));
+            Identifier fontId = Identifier.of("seq", "font/" + fontKey.toLowerCase());
+            GlyphBaker glyphBaker = new GlyphBaker(mc.getTextureManager(), fontId);
+            FontStorage fontStorage = new FontStorage(glyphBaker);
             fontStorage.setFonts(filters, Set.of());
 
-            TextRenderer textRenderer = new TextRenderer(id -> fontStorage, true);
+            TextRenderer.GlyphsProvider provider = new TextRenderer.GlyphsProvider() {
+                private final GlyphProvider glyphProvider = fontStorage.getGlyphs(false);
+                private final EffectGlyph rectangle = fontStorage.getRectangleBakedGlyph();
+
+                @Override
+                public GlyphProvider getGlyphs(StyleSpriteSource source) {
+                    return glyphProvider;
+                }
+
+                @Override
+                public EffectGlyph getRectangleGlyph() {
+                    return rectangle;
+                }
+            };
+
+            TextRenderer textRenderer = new TextRenderer(provider);
             fontRenderers.put(fontKey, textRenderer);
             LOGGER.info("Loaded bundled font '{}' from resource {}", fontKey, resourcePath);
         } catch (IOException e) {
@@ -125,9 +143,25 @@ public class Fonts implements ConfigurationAccessor {
         }
         String safeName = StringUtils.replace(FileNameUtils.getBaseName(fontFile.toPath()), " ", "");
         safeName = StringUtils.replace(safeName, "-", "").toLowerCase();
-        FontStorage fontStorage = new FontStorage(mc.getTextureManager(), Identifier.of("seq", "font/" + safeName));
+        Identifier fontId = Identifier.of("seq", "font/" + safeName);
+        GlyphBaker glyphBaker = new GlyphBaker(mc.getTextureManager(), fontId);
+        FontStorage fontStorage = new FontStorage(glyphBaker);
         fontStorage.setFonts(list, Set.of());
-        TextRenderer textRenderer = new TextRenderer(id -> fontStorage, true);
+        TextRenderer.GlyphsProvider provider = new TextRenderer.GlyphsProvider() {
+            private final GlyphProvider glyphProvider = fontStorage.getGlyphs(false);
+            private final EffectGlyph rectangle = fontStorage.getRectangleBakedGlyph();
+
+            @Override
+            public GlyphProvider getGlyphs(StyleSpriteSource source) {
+                return glyphProvider;
+            }
+
+            @Override
+            public EffectGlyph getRectangleGlyph() {
+                return rectangle;
+            }
+        };
+        TextRenderer textRenderer = new TextRenderer(provider);
         fontRenderers.put(fontName, textRenderer);
     }
 

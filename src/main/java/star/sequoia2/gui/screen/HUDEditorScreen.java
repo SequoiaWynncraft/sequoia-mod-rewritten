@@ -1,8 +1,11 @@
 package star.sequoia2.gui.screen;
 
 import lombok.Setter;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.input.KeyInput;
+import net.minecraft.client.input.CharInput;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 import star.sequoia2.accessors.FeaturesAccessor;
@@ -71,8 +74,8 @@ public class HUDEditorScreen extends Screen implements FeaturesAccessor, RenderU
         openScale = Math.min(base, openScale + delta);
         float appliedScale = Math.max(0.0001f, openScale / sf);
 
-        context.getMatrices().push();
-        context.getMatrices().scale(appliedScale, appliedScale, 1.0f);
+        context.getMatrices().pushMatrix();
+        context.getMatrices().scale(appliedScale, appliedScale);
 
         if (frame.isWithinTotal(fixedMouseX, fixedMouseY)) {
             focus = frame;
@@ -85,7 +88,10 @@ public class HUDEditorScreen extends Screen implements FeaturesAccessor, RenderU
 
         if (frame.isDragging()) {
             try {
-                star.sequoia2.client.SeqClient.getUiPositions().set(PositionKey.fromHudUI(), new UIPosition(frame.getX(), frame.getY()));
+                star.sequoia2.client.SeqClient.getUiPositions().set(
+                        PositionKey.fromHudUI(),
+                        new UIPosition(frame.getX(), frame.getY())
+                );
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -100,7 +106,7 @@ public class HUDEditorScreen extends Screen implements FeaturesAccessor, RenderU
         MOUSE_X = fixedMouseX;
         MOUSE_Y = fixedMouseY;
 
-        context.getMatrices().pop();
+        context.getMatrices().popMatrix();
     }
 
     @Override
@@ -113,7 +119,11 @@ public class HUDEditorScreen extends Screen implements FeaturesAccessor, RenderU
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int mouseButton) {
+    public boolean mouseClicked(Click click, boolean outsideScreen) {
+        double mouseX = click.x();
+        double mouseY = click.y();
+        int mouseButton = click.button();
+
         double[] scaled = getScaledMouse(mouseX, mouseY);
         mouseX = scaled[0];
         mouseY = scaled[1];
@@ -131,18 +141,22 @@ public class HUDEditorScreen extends Screen implements FeaturesAccessor, RenderU
         }
 
         frame.mouseClicked((float) mouseX, (float) mouseY, mouseButton);
-        return super.mouseClicked(mouseX, mouseY, mouseButton);
+        return super.mouseClicked(click, outsideScreen);
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+    public boolean mouseReleased(Click click) {
+        double mouseX = click.x();
+        double mouseY = click.y();
+        int button = click.button();
+
         double[] scaled = getScaledMouse(mouseX, mouseY);
         mouseX = scaled[0];
         mouseY = scaled[1];
 
-        if (button == 0) {
+        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             MOUSE_LEFT_HOLD = false;
-        } else if (button == 1) {
+        } else if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
             MOUSE_RIGHT_HOLD = false;
         }
 
@@ -152,7 +166,7 @@ public class HUDEditorScreen extends Screen implements FeaturesAccessor, RenderU
             settings.hudLayer.mouseReleased((float) mouseX, (float) mouseY, button);
         }
 
-        return super.mouseReleased(mouseX, mouseY, button);
+        return super.mouseReleased(click);
     }
 
     @Override
@@ -169,21 +183,29 @@ public class HUDEditorScreen extends Screen implements FeaturesAccessor, RenderU
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyInput input) {
+        int keyCode = input.getKeycode();
+        int scanCode = input.scancode();
+        int modifiers = input.modifiers();
         frame.keyPressed(keyCode, scanCode, modifiers);
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(input);
     }
 
     @Override
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+    public boolean keyReleased(KeyInput input) {
+        int keyCode = input.getKeycode();
+        int scanCode = input.scancode();
+        int modifiers = input.modifiers();
         frame.keyReleased(keyCode, scanCode, modifiers);
-        return super.keyReleased(keyCode, scanCode, modifiers);
+        return super.keyReleased(input);
     }
 
     @Override
-    public boolean charTyped(char chr, int modifiers) {
+    public boolean charTyped(CharInput input) {
+        char chr = (char) input.codepoint();
+        int modifiers = input.modifiers();
         frame.charTyped(chr, modifiers);
-        return super.charTyped(chr, modifiers);
+        return super.charTyped(input);
     }
 
     @Override

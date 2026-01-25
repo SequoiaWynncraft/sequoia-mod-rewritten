@@ -90,9 +90,9 @@ public class ModuleButton extends RelativeComponent implements SettingsAccessor,
         Color bgEnd = hovering ? accent1 : accent3;
         render2DUtil().roundGradientFilled(context.getMatrices(), left, top, right, bottom, root.rounding, bgEnd, accent1, true);
 
-        context.getMatrices().push();
-        context.getMatrices().translate(left + root.pad, top + textRenderer().fontHeight, 0);
-        context.getMatrices().scale(1.1f, 1.1f, 0);
+        context.getMatrices().pushMatrix();
+        context.getMatrices().translate(left + root.pad, top + textRenderer().fontHeight);
+        context.getMatrices().scale(1.1f, 1.1f);
 
 
         int textColor;
@@ -106,7 +106,7 @@ public class ModuleButton extends RelativeComponent implements SettingsAccessor,
         }
 
         renderText(context, feature.name, 0, 0, textColor, true);
-        context.getMatrices().pop();
+        context.getMatrices().popMatrix();
 
         renderText(context, "§7" + feature.description, left + root.pad, top + contentHeight() / 2f, bgStart.getColor(), true);
 

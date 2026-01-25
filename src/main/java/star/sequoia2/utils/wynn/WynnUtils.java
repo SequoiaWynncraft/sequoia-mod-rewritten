@@ -33,7 +33,7 @@ public final class WynnUtils {
     private static final Pattern WORLD_NAME_TABLIST_ENTRY = Pattern.compile("^§f {2}§lGlobal \\[(.*)]$");
 
     private static final Comparator<PlayerInfo> PLAYER_INFO_COMPARATOR =
-            Comparator.comparing(playerInfo -> playerInfo.getName(), String::compareToIgnoreCase);
+            Comparator.comparing(playerInfo -> playerInfo.name, String::compareToIgnoreCase);
 
     private static final Pattern GUILD_TABLIST_ENTRY_PATTERN = Pattern.compile("§b§l  Guild");
 
@@ -56,9 +56,9 @@ public final class WynnUtils {
                 .getPlayerList()                 // List<PlayerListEntry>
                 .stream()
                 .filter(entry ->
-                        Objects.equals(entry.getProfile().getId(), WORLD_LIST_ENTRY))
+                        Objects.equals(entry.getProfile().id(), WORLD_LIST_ENTRY))
                 .findFirst()
-                .map(entry -> entry.getProfile().getName())
+                .map(entry -> entry.getProfile().name())
                 .orElse("");
     }
 

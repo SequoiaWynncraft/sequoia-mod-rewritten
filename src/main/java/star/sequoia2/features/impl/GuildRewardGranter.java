@@ -484,8 +484,8 @@ public class GuildRewardGranter extends ToggleFeature {
             return Optional.of(display);
         }
         ProfileComponent profile = slot.getStack().get(DataComponentTypes.PROFILE);
-        if (profile != null && profile.gameProfile() != null) {
-            String profName = normalizeName(profile.gameProfile().getName());
+        if (profile != null && profile.getGameProfile() != null) {
+            String profName = normalizeName(profile.getGameProfile().name());
             if (StringUtils.isNotBlank(profName)) {
                 return Optional.of(profName);
             }

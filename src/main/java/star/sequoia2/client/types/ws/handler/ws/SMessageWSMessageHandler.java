@@ -15,6 +15,7 @@ import star.sequoia2.client.types.ws.message.ws.SMessageWSMessage;
 import star.sequoia2.features.impl.ws.WebSocket;
 import star.sequoia2.utils.URLUtils;
 
+import java.net.URI;
 import java.util.Optional;
 import java.util.regex.Matcher;
 
@@ -61,8 +62,8 @@ public class SMessageWSMessageHandler extends WSMessageHandler implements Featur
                 String url = matcher.group();
                 MutableText urlText = Text.literal(url)
                         .styled(style -> style
-                                .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url))
-                                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Click to open URL"))));
+                                .withClickEvent(new ClickEvent.OpenUrl(URI.create(url)))
+                                .withHoverEvent(new HoverEvent.ShowText(Text.literal("Click to open URL"))));
                 messageComponent = messageComponent.append(urlText);
 
                 lastMatchEnd = matcher.end();

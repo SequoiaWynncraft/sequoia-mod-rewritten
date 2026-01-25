@@ -153,13 +153,13 @@ public class GuildWarTracker extends ToggleFeature {
         if (context.warrers.isEmpty()) context.warrers = collectCurrentWarrers();
 
         List<String> uniqueWarrers = context.warrers.isEmpty()
-                ? List.of(mc.player.getGameProfile().getName())
+                ? List.of(mc.player.getGameProfile().name())
                 : new ArrayList<>(new LinkedHashSet<>(context.warrers));
         List<String> validWarrers = uniqueWarrers.stream()
                 .filter(this::isValidUsername)
                 .toList();
         if (validWarrers.isEmpty()) {
-            String fallback = mc.player.getGameProfile().getName();
+            String fallback = mc.player.getGameProfile().name();
             if (isValidUsername(fallback)) validWarrers = List.of(fallback);
         }
 
@@ -248,14 +248,14 @@ public class GuildWarTracker extends ToggleFeature {
         if (mc.player == null || mc.world == null) return Collections.emptyList();
 
         LinkedHashSet<String> uniqueNames = new LinkedHashSet<>();
-        uniqueNames.add(mc.player.getGameProfile().getName());
+        uniqueNames.add(mc.player.getGameProfile().name());
 
         for (PlayerEntity other : mc.world.getPlayers()) {
             if (other == null || other == mc.player) continue;
             if (!isWithinTrackingRange(other)) continue;
 
             String name = other.getGameProfile() != null
-                    ? other.getGameProfile().getName()
+                    ? other.getGameProfile().name()
                     : other.getName().getString();
             uniqueNames.add(name);
         }

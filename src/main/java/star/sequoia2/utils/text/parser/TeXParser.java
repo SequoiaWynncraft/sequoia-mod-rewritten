@@ -8,6 +8,8 @@ import star.sequoia2.client.types.text.StyledText;
 import star.sequoia2.client.types.text.StyledTextPart;
 import star.sequoia2.features.impl.Settings;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
@@ -162,31 +164,7 @@ public class TeXParser implements FeaturesAccessor, TeXParserAccessor {
 
         texFunctions = m;
     }
-//    private  R gradient(List<String> tokens, int index) {
-//        R startLiteral = getNextLiteral(tokens, index);
-//        int c0 = Integer.parseInt(startLiteral.text.getString(), 16);
-//        index = startLiteral.next;
-//        R endLiteral = getNextLiteral(tokens, index);
-//        int c1 = Integer.parseInt(endLiteral.text.getString(), 16);
-//        index = endLiteral.next;
-//        R textLiteral = getNextLiteral(tokens, index);
-//        String raw = textLiteral.text.getString();
-//        index = textLiteral.next;
-//        MutableText out = Text.empty();
-//        int r0 = (c0 >> 16) & 0xFF, g0 = (c0 >> 8) & 0xFF,  b0 = c0 & 0xFF;
-//        int r1 = (c1 >> 16) & 0xFF, g1 = (c1 >> 8) & 0xFF,  b1 = c1 & 0xFF;
-//        int n = raw.length();
-//        for (int i = 0; i < n; i++) {
-//            double t = n == 1 ? 0 : (double) i / (n - 1);
-//            int r = (int) Math.round(r0 + (r1 - r0) * t);
-//            int g = (int) Math.round(g0 + (g1 - g0) * t);
-//            int b = (int) Math.round(b0 + (b1 - b0) * t);
-//            int rgb = (r << 16) | (g << 8) | b;
-//            out.append(Text.literal(String.valueOf(raw.charAt(i)))
-//                    .styled(s -> s.withColor(rgb)));
-//        }
-//        return new R(out, index);
-//    }
+
     private R gradient(List<String> tokens, int index) {
         R countLiteral = getNextLiteral(tokens, index);
         int colorCount = Integer.parseInt(countLiteral.text.getString());
@@ -209,7 +187,6 @@ public class TeXParser implements FeaturesAccessor, TeXParserAccessor {
         if (n == 0 || colorCount == 0) return new R(out, index);
 
         for (int i = 0; i < n; i++) {
-//            float t = (float) i / (n - 1);  // in [0, 1]
             int rgb = getRgb(i, n, colorCount, colors);
 
             out.append(Text.literal(String.valueOf(raw.charAt(i)))
@@ -218,6 +195,7 @@ public class TeXParser implements FeaturesAccessor, TeXParserAccessor {
 
         return new R(out, index);
     }
+
     private R color(List<String> tokens, Integer index) {
         R colorLiteral = getNextLiteral(tokens, index);
         int color = Integer.parseInt(colorLiteral.text.getString(), 16);
@@ -228,6 +206,7 @@ public class TeXParser implements FeaturesAccessor, TeXParserAccessor {
 
         return new R(text.styled(style -> style.withColor(color)), index);
     }
+
     private R dcolor(List<String> tokens, Integer index) {
         R colorLiteral = getNextLiteral(tokens, index);
         int color = Integer.parseInt(colorLiteral.text.getString(), 10);
@@ -238,6 +217,7 @@ public class TeXParser implements FeaturesAccessor, TeXParserAccessor {
 
         return new R(text.styled(style -> style.withColor(color)), index);
     }
+
     private R hover(List<String> tokens, Integer index) {
         R hoverLiteral = getNextLiteral(tokens, index);
         MutableText hover = hoverLiteral.text;
@@ -246,13 +226,12 @@ public class TeXParser implements FeaturesAccessor, TeXParserAccessor {
         MutableText text = textLiteral.text;
         index = textLiteral.next;
 
-        return new R(text.styled(style -> style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hover))), index);
-
+        return new R(text.styled(style -> style.withHoverEvent(new HoverEvent.ShowText(hover))), index);
     }
+
     private R click(List<String> tokens, Integer index) {
         R actionLiteral = getNextLiteral(tokens, index);
         ClickEvent.Action action = ClickEvent.Action.valueOf(actionLiteral.text.getString());
-        // open_url, open_file, run_command, suggest_command, change_page, copy_to_clipboard
         index = actionLiteral.next;
         R clickLiteral = getNextLiteral(tokens, index);
         String click = clickLiteral.text.getString();
@@ -261,9 +240,34 @@ public class TeXParser implements FeaturesAccessor, TeXParserAccessor {
         MutableText text = textLiteral.text;
         index = textLiteral.next;
 
-        return new R(text.styled(style -> style.withClickEvent(new ClickEvent(action, click))), index);
+        final ClickEvent event;
+        switch (action) {
+            case OPEN_URL -> {
+                ClickEvent eTmp;
+                try {
+                    eTmp = new ClickEvent.OpenUrl(new URI(click));
+                } catch (URISyntaxException e) {
+                    eTmp = null;
+                }
+                event = eTmp;
+            }
+            case OPEN_FILE -> event = new ClickEvent.OpenFile(click);
+            case RUN_COMMAND -> event = new ClickEvent.RunCommand(click);
+            case SUGGEST_COMMAND -> event = new ClickEvent.SuggestCommand(click);
+//            case CHANGE_PAGE -> event = new ClickEvent.ChangePage(click); no
+            case COPY_TO_CLIPBOARD -> event = new ClickEvent.CopyToClipboard(click);
+            default -> {
+                event = null;
+            }
+        }
 
+        if (event == null) {
+            return new R(text, index);
+        }
+
+        return new R(text.styled(style -> style.withClickEvent(event)), index);
     }
+
     private R ranking(List<String> tokens, Integer index) {
         R textLiteral = getNextLiteral(tokens, index);
         MutableText text = textLiteral.text;
@@ -271,6 +275,7 @@ public class TeXParser implements FeaturesAccessor, TeXParserAccessor {
 
         return new R(parseMutableText(!Objects.equals(text.getString(), "null") ? " \\-{(}\\2{#%s}\\-{)}" : "", text.getString()), index);
     }
+
     private R nickname(List<String> tokens, Integer index) {
         R textLiteral = getNextLiteral(tokens, index);
         MutableText text = textLiteral.text;
@@ -278,6 +283,7 @@ public class TeXParser implements FeaturesAccessor, TeXParserAccessor {
 
         return new R(parseMutableText(!Objects.equals(text.getString(), "null") ? " \\-{(}\\i{\\3{%s}}\\-{)}" : "", text.getString()), index);
     }
+
     private R pill(List<String> tokens, Integer index) {
         R bgColorLiteral = getNextLiteral(tokens, index);
         String bgColor = bgColorLiteral.text.getString();
@@ -288,55 +294,65 @@ public class TeXParser implements FeaturesAccessor, TeXParserAccessor {
         R textLiteral = getNextLiteral(tokens, index);
         MutableText text = textLiteral.text;
         index = textLiteral.next;
-        return new R(parseMutableText(!Objects.equals(text.getString(), "null") ? getPill(text.getString(),bgColor,textColor) : "", text.getString()), index);
+        return new R(parseMutableText(!Objects.equals(text.getString(), "null") ? getPill(text.getString(), bgColor, textColor) : "", text.getString()), index);
     }
 
     private R styled(List<String> tokens, Integer index, UnaryOperator<Style> style) {
         R textLiteral = getNextLiteral(tokens, index);
         return new R(textLiteral.text.styled(style), textLiteral.next);
     }
+
     private R light(List<String> tokens, Integer index) {
         return styled(tokens, index, features().get(Settings.class).map(settings -> settings.getTheme().get().getTheme().light()).orElse(style -> style));
     }
+
     private R normal(List<String> tokens, Integer index) {
         return styled(tokens, index, features().get(Settings.class).map(settings -> settings.getTheme().get().getTheme().normal()).orElse(style -> style));
     }
+
     private R dark(List<String> tokens, Integer index) {
         return styled(tokens, index, features().get(Settings.class).map(settings -> settings.getTheme().get().getTheme().dark()).orElse(style -> style));
     }
+
     private R accent1(List<String> tokens, Integer index) {
         return styled(tokens, index, features().get(Settings.class).map(settings -> settings.getTheme().get().getTheme().accent1()).orElse(style -> style));
     }
+
     private R accent2(List<String> tokens, Integer index) {
         return styled(tokens, index, features().get(Settings.class).map(settings -> settings.getTheme().get().getTheme().accent2()).orElse(style -> style));
     }
+
     private R accent3(List<String> tokens, Integer index) {
         return styled(tokens, index, features().get(Settings.class).map(settings -> settings.getTheme().get().getTheme().accent3()).orElse(style -> style));
     }
+
     private R italicize(List<String> tokens, Integer index) {
         return styled(tokens, index, style -> style.withItalic(true));
     }
+
     private R boldfont(List<String> tokens, Integer index) {
         return styled(tokens, index, style -> style.withBold(true));
     }
+
     private R underline(List<String> tokens, Integer index) {
         return styled(tokens, index, style -> style.withUnderline(true));
     }
+
     private R strikethrough(List<String> tokens, Integer index) {
         return styled(tokens, index, style -> style.withStrikethrough(true));
     }
+
     private R obfuscated(List<String> tokens, Integer index) {
         return styled(tokens, index, style -> style.withObfuscated(true));
     }
-
 
     private int getRgb(int i, int n, int colorCount, List<Integer> colors) {
         if (colorCount == 1) {
             return colors.getFirst();
         }
-        float t = (float) i / (n-1);
+        float t = (float) i / (n - 1);
         float scaledT = t * (colorCount - 1);
-        int segment = Math.min((int) scaledT, colorCount - 2); // avoid overflow
+        int segment = Math.min((int) scaledT, colorCount - 2);
         float localT = scaledT - segment;
 
         int c0 = colors.get(segment);
@@ -354,21 +370,22 @@ public class TeXParser implements FeaturesAccessor, TeXParserAccessor {
     private char getUnicodeChar(char letter) {
         if (letter >= 'A' && letter <= 'Z') {
             int offset = letter - 65;
-            return (char)('\ue040' + offset);
+            return (char) ('\ue040' + offset);
         } else if (letter >= 'a' && letter <= 'z') {
             int offset = letter - 97;
-            return (char)('\ue040' + offset);
+            return (char) ('\ue040' + offset);
         } else {
             return ' ';
         }
     }
+
     public String getPill(String text, String bgColor, String textColor) {
         StringBuilder prefix = new StringBuilder();
         bgColor = String.format("\\color{%s}", bgColor);
         textColor = String.format("\\color{%s}", textColor);
         prefix.append(bgColor).append("{\ue010\u2064}");
 
-        for(char c : text.toCharArray()) {
+        for (char c : text.toCharArray()) {
             if (Character.isLetter(c)) {
                 char unicodeChar = getUnicodeChar(c);
                 prefix.append(bgColor).append("{\ue00f\ue012}").append(textColor).append("{").append(unicodeChar).append("}");
@@ -380,14 +397,7 @@ public class TeXParser implements FeaturesAccessor, TeXParserAccessor {
     }
 
     public MutableText parseMutableText(String text) {
-//        MutableText testing = Text.empty();
-//        List<String> tokens = tokenize(text);
-//
-//        for (int i = 0; i < tokens.toArray().length; i++) {
-//            testing.append(tokens.get(i));
-//            testing.append("\n");
-//        }
-        return parseMutableText(tokenize(text), 0).text; // i keep needing this for debugging
+        return parseMutableText(tokenize(text), 0).text;
     }
 
     public MutableText parseMutableText(String text, Object... parameters) {
@@ -397,17 +407,15 @@ public class TeXParser implements FeaturesAccessor, TeXParserAccessor {
     public String sanitize(String raw) {
         if (raw == null || raw.isEmpty()) return raw;
 
-        StringBuilder sb = new StringBuilder(raw.length() * 2);  // worst‑case doubling
+        StringBuilder sb = new StringBuilder(raw.length() * 2);
         for (char ch : raw.toCharArray()) {
             if (ch == '\\' || ch == '{' || ch == '}') {
-                sb.append('\\');   // add the escape
+                sb.append('\\');
             }
             sb.append(ch);
         }
         return sb.toString();
     }
-
-    // inverse function, courtesy of GPT and lightly modified
 
     public String toTeX(StyledText styled) {
         StringBuilder out = new StringBuilder();
@@ -420,7 +428,6 @@ public class TeXParser implements FeaturesAccessor, TeXParserAccessor {
             ClickEvent pe = part.getPartStyle().getClickEvent();
             HoverEvent he = part.getPartStyle().getHoverEvent();
 
-            // If event context changes, flush the previous run
             if (!same(pe, currentClick) || !same(he, currentHover)) {
                 flushRun(out, run, currentClick, currentHover);
                 run.setLength(0);
@@ -428,11 +435,9 @@ public class TeXParser implements FeaturesAccessor, TeXParserAccessor {
                 currentHover = he;
             }
 
-            // Keep your existing inline formatting codes; only escape TeX control chars.
             run.append(escapeTeX(part.getString(null, PartStyle.StyleType.DEFAULT)));
         }
 
-        // Flush the final run
         flushRun(out, run, currentClick, currentHover);
         return out.toString();
     }
@@ -440,47 +445,32 @@ public class TeXParser implements FeaturesAccessor, TeXParserAccessor {
     private boolean same(ClickEvent a, ClickEvent b) {
         if (a == b) return true;
         if (a == null || b == null) return false;
-        // action + value is the semantic identity
-        return a.getAction() == b.getAction()
-                && Objects.equals(a.getValue(), b.getValue());
+        return a.equals(b);
     }
 
     private boolean same(HoverEvent a, HoverEvent b) {
         if (a == b) return true;
         if (a == null || b == null) return false;
-        if (a.getAction() != b.getAction()) return false;
 
-        // Compare the *payload* by a stable signature
-        var act = a.getAction();
-        if (act == HoverEvent.Action.SHOW_TEXT) {
-            Text ta = a.getValue(HoverEvent.Action.SHOW_TEXT);
-            Text tb = b.getValue(HoverEvent.Action.SHOW_TEXT);
-            return Objects.equals(hoverTextSignature(ta), hoverTextSignature(tb));
-        } else {
-            // For non-text hovers (item/entity), fall back to value equality
-            Object va = a.getValue(act);
-            Object vb = b.getValue(act);
-            return Objects.equals(va, vb);
+        if (a instanceof HoverEvent.ShowText(Text value1) && b instanceof HoverEvent.ShowText(Text value)) {
+            return Objects.equals(hoverTextSignature(value1), hoverTextSignature(value));
         }
+
+        return a.equals(b);
     }
 
-    /** Build a stable signature for hover SHOW_TEXT content. */
     private String hoverTextSignature(Text t) {
         if (t == null) return "";
-        // Keep it cheap & deterministic: compare the plain string without MC formatting.
-        // (If you need exact formatting fidelity, you can swap this for toTeX(StyledText.fromComponent(t)).)
         try {
             return StyledText.fromComponent(t).getStringWithoutFormatting();
         } catch (Throwable e) {
-            return String.valueOf(t.getString()); // safe fallback
+            return String.valueOf(t.getString());
         }
     }
 
-
-    /** Wrap a run with \hover and/or \click if present, then append to out. */
     private void flushRun(StringBuilder out, StringBuilder run,
-                                 ClickEvent click, HoverEvent hover) {
-        if (run.length() == 0) return; // <-- instead of run.isEmpty()
+                          ClickEvent click, HoverEvent hover) {
+        if (run.length() == 0) return;
 
         String inner = run.toString();
 
@@ -490,35 +480,47 @@ public class TeXParser implements FeaturesAccessor, TeXParserAccessor {
         }
         if (click != null) {
             String action = click.getAction().name();
-            String value  = escapeTeX(click.getValue());
+            String value = escapeTeX(serializeClickValue(click));
             inner = "\\click{" + action + "}{" + value + "}{" + inner + "}";
         }
         out.append(inner);
     }
 
-
-    /** Convert hover payload to TeX; only SHOW_TEXT is encoded, others become a label. */
     private String serializeHoverText(HoverEvent hover) {
-        try {
-            if (hover.getAction() == HoverEvent.Action.SHOW_TEXT) {
-                // Value is a Text component; keep its formatting codes, but also encode its own hover/click.
-                Text value = hover.getValue(HoverEvent.Action.SHOW_TEXT);
-                if (value != null) {
-                    StyledText st = StyledText.fromComponent(value);
-                    return toTeX(st);
-                }
+        if (hover instanceof HoverEvent.ShowText st) {
+            Text value = st.value();
+            if (value != null) {
+                StyledText stx = StyledText.fromComponent(value);
+                return toTeX(stx);
             }
-            // Fallback for non-text hovers (items, entities, etc.)
-            return "<hover>";
-        } catch (ClassCastException ignored) {
-            return escapeTeX(String.valueOf(hover.getValue(HoverEvent.Action.SHOW_TEXT)));
         }
+        return "<hover>";
     }
 
-    /** Escape TeX control chars for your mini-language: backslash and braces. */
+    private String serializeClickValue(ClickEvent click) {
+        if (click instanceof ClickEvent.OpenUrl(URI uri)) {
+            return uri != null ? uri.toString() : "";
+        }
+        if (click instanceof ClickEvent.RunCommand(String command1)) {
+            return command1;
+        }
+        if (click instanceof ClickEvent.SuggestCommand(String command)) {
+            return command;
+        }
+        if (click instanceof ClickEvent.ChangePage(int page)) {
+            return String.valueOf(page); //stupid
+        }
+        if (click instanceof ClickEvent.OpenFile(String path)) {
+            return path;
+        }
+        if (click instanceof ClickEvent.CopyToClipboard(String value)) {
+            return value;
+        }
+        return "";
+    }
+
     private String escapeTeX(String s) {
         if (s == null || s.isEmpty()) return "";
-        // order matters: backslash first
         return s
                 .replace("\\", "\\\\")
                 .replace("{", "\\{")

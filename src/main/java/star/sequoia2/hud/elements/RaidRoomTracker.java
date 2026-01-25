@@ -128,9 +128,9 @@ public class RaidRoomTracker extends HUDElement implements EventBusAccessor, Sou
             render2DUtil().roundRectFilled(context.getMatrices(), x, y, x + width, y + height, 3f, bgColor);
         }
 
-        context.getMatrices().push();
-        context.getMatrices().translate(x + 2, y + 2, 0);
-        context.getMatrices().scale(textScale.get(), textScale.get(), 1.0f);
+        context.getMatrices().pushMatrix();
+        context.getMatrices().translate(x + 2, y + 2);
+        context.getMatrices().scale(textScale.get(), textScale.get());
 
         int lineY = 0;
         long now = System.currentTimeMillis();
@@ -142,7 +142,7 @@ public class RaidRoomTracker extends HUDElement implements EventBusAccessor, Sou
             lineY += textRenderer().fontHeight;
         }
 
-        context.getMatrices().pop();
+        context.getMatrices().popMatrix();
     }
 
     private void rebuildFromHistoricRaids(List<HistoricRaidInfo> raids) {
