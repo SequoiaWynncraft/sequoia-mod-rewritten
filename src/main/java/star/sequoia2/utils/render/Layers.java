@@ -19,7 +19,6 @@ public class Layers {
         return GLOBAL_LINES.computeIfAbsent(lineWidth, lw -> RenderLayer.of(
                 "sequoia2_global_lines_" + lw,
                 RenderSetup.builder(GLOBAL_LINES_PIPELINE)
-                        .translucent()
                         .expectedBufferSize(256)
                         .layeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
                         .build()
@@ -34,7 +33,6 @@ public class Layers {
         GLOBAL_QUADS = RenderLayer.of(
                 "sequoia2_global_fill",
                 RenderSetup.builder(GLOBAL_QUADS_PIPELINE)
-                        .translucent()
                         .expectedBufferSize(256)
                         .layeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
                         .build()
@@ -43,7 +41,6 @@ public class Layers {
         OUTLINE_SHADER_LAYER = RenderLayer.of(
                 "sequoia2_outline",
                 RenderSetup.builder(GLOBAL_LINES_PIPELINE)
-                        .translucent()
                         .expectedBufferSize(256)
                         .layeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
                         .build()

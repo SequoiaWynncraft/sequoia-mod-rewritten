@@ -60,7 +60,7 @@ public class FeaturesCategory extends RelativeComponent implements RenderUtilAcc
         Color accent1 = features().get(Settings.class).map(Settings::getThemeAccent1).orElse(Color.black());
         Color accent2 = features().get(Settings.class).map(Settings::getThemeAccent2).orElse(Color.black());
 
-        GuiRoot root = getGuiRoot();;
+        GuiRoot root = getGuiRoot();
 
         if (root == null) {
             render2DUtil().drawText(context, "couldn't access root", left + 5f, top + 5f, light.getColor(), true);

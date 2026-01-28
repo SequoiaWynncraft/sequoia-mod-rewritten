@@ -1,12 +1,13 @@
 package star.sequoia2.gui.component;
 
+import star.sequoia2.accessors.RenderUtilAccessor;
 import star.sequoia2.accessors.TextRendererAccessor;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.gui.DrawContext;
 
 @Getter
-public abstract class Component implements Drawable, TextRendererAccessor {
+public abstract class Component implements Drawable, TextRendererAccessor, RenderUtilAccessor {
 
     protected float x;
     protected float y;
@@ -23,7 +24,7 @@ public abstract class Component implements Drawable, TextRendererAccessor {
     }
 
     protected void renderText(DrawContext context, String text, float x, float y, int color, boolean shadow) {
-        context.drawText(textRenderer(), text, (int) x, (int) y, color, shadow);
+        render2DUtil().drawText(context, text, (int) x, (int) y, color, shadow);
     }
 
     public boolean isWithin(double xval, double yval) {

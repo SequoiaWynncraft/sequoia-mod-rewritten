@@ -74,7 +74,7 @@ public class HudEditorFrame extends InteractableComponent implements FeaturesAcc
         render2DUtil().drawGlow(context, x, y, x + width, y + height + frameHeight, dark, rounding);
         render2DUtil().roundRectFilled(context.getMatrices(), x, y, x + width, y + height, rounding, normal);
 
-        context.drawText(textRenderer(), name, (int) (x + 5.0f), (int) (y + 5.0f), light.getColor(), true);
+        render2DUtil().drawText(context, name, (int) (x + 5.0f), (int) (y + 5.0f), light.getColor(), true);
 
         closeW = 10.0f;
         closeH = 10.0f;
@@ -82,8 +82,7 @@ public class HudEditorFrame extends InteractableComponent implements FeaturesAcc
         closeY = y + 4.0f;
 
         render2DUtil().roundRectFilled(context.getMatrices(), closeX, closeY, closeX + closeW, closeY + closeH, rounding, accent2);
-        context.drawText(
-                textRenderer(),
+        render2DUtil().drawText(context,
                 "X",
                 (int) (closeX + (closeW - textRenderer().getWidth("X")) / 2),
                 (int) (closeY + (closeH - textRenderer().fontHeight) / 2 + 1),

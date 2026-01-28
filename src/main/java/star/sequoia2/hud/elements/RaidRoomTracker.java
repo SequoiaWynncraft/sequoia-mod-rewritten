@@ -138,7 +138,7 @@ public class RaidRoomTracker extends HUDElement implements EventBusAccessor, Sou
         int baseColor = useBadColor ? badRoomColor.get().getColor() : textColor.get().getColor();
 
         for (String line : lines) {
-            context.drawText(textRenderer(), line, 0, lineY, baseColor, true);
+            render2DUtil().drawText(context, line, 0, lineY, baseColor, true);
             lineY += textRenderer().fontHeight;
         }
 

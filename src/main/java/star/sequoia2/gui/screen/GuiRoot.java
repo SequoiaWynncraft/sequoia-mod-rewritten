@@ -127,7 +127,7 @@ public final class GuiRoot implements RenderUtilAccessor, TextRendererAccessor, 
                 render2DUtil().drawGlow(context, listX, byTop, listX + maxBtnWidth, byTop + btnH, accent2, rounding);
             }
 
-            context.drawText(textRenderer(), c.name, (int) textX, (int) textY - (hover ? 1 : 0), light.getColor(), true);
+            render2DUtil().drawText(context, c.name, (int) textX, (int) textY - (hover ? 1 : 0), light.getColor(), true);
             drawIdx++;
         }
 

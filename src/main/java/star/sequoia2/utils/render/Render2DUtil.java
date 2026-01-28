@@ -85,12 +85,16 @@ public class Render2DUtil implements TextRendererAccessor {
     }
 
     public void drawText(DrawContext context, String text, float x, float y, int color, boolean shadow) {
+        if ((color >>> 24) == 0) {
+            color |= 0xFF000000;
+        }
         Matrix3x2fStack matrices = context.getMatrices();
         matrices.pushMatrix();
         matrices.translate(x, y);
         context.drawText(textRenderer(), text, 0, 0, color, shadow);
         matrices.popMatrix();
     }
+
 
     public void drawItem(DrawContext context, ItemStack stack, float x, float y) {
         Matrix3x2fStack matrices = context.getMatrices();
