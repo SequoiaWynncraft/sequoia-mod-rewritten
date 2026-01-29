@@ -24,22 +24,31 @@ import static net.minecraft.client.gl.RenderPipelines.RENDERTYPE_LINES_SNIPPET;
 public abstract class Pipelines {
     private static final List<RenderPipeline> PIPELINES = new ArrayList<>();
 
-    static final RenderPipeline GLOBAL_QUADS_PIPELINE = RenderPipeline.builder(POSITION_COLOR_SNIPPET)
+    static final RenderPipeline GLOBAL_QUADS_PIPELINE = add(RenderPipeline.builder(POSITION_COLOR_SNIPPET)
             .withLocation("pipeline/global_fill_pipeline")
             .withVertexFormat(VertexFormats.POSITION_COLOR, VertexFormat.DrawMode.QUADS)
             .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
             .withBlend(BlendFunction.TRANSLUCENT)
             .withDepthWrite(false)
             .withCull(false)
-            .build();
+            .build());
 
-    static final RenderPipeline GLOBAL_LINES_PIPELINE = RenderPipeline.builder(RENDERTYPE_LINES_SNIPPET)
+    static final RenderPipeline GLOBAL_TRIANGLE_FAN_PIPELINE = add(RenderPipeline.builder(POSITION_COLOR_SNIPPET)
+            .withLocation("pipeline/global_triangle_fan_pipeline")
+            .withVertexFormat(VertexFormats.POSITION_COLOR, VertexFormat.DrawMode.TRIANGLE_FAN)
+            .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
+            .withBlend(BlendFunction.TRANSLUCENT)
+            .withDepthWrite(false)
+            .withCull(false)
+            .build());
+
+    static final RenderPipeline GLOBAL_LINES_PIPELINE = add(RenderPipeline.builder(RENDERTYPE_LINES_SNIPPET)
             .withLocation("pipeline/global_lines_pipeline")
             .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
             .withBlend(BlendFunction.TRANSLUCENT)
             .withDepthWrite(false)
             .withCull(false)
-            .build();
+            .build());
 
     private static RenderPipeline add(RenderPipeline pipeline) {
         PIPELINES.add(pipeline);

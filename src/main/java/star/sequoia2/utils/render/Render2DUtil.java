@@ -142,7 +142,7 @@ public class Render2DUtil implements TextRendererAccessor {
             b.vertex(p.x, p.y, 0.0F).color(cr, cg, cb, ca);
         }
         BuiltBuffer built = b.end();
-        Layers.getGlobalQuads().draw(built);
+        Layers.getGlobalTriangleFan().draw(built);
     }
 
     public void fill(Matrix3x2fStack matrices, double x, double y, double x2, double y2, int color) {
@@ -292,17 +292,12 @@ public class Render2DUtil implements TextRendererAccessor {
         float w = Math.max(0.0f, x2 - x);
         float h = Math.max(0.0f, y2 - y);
         radius = Math.max(0.0f, Math.min(radius, Math.min(w, h) * 0.5f));
-
         BufferBuilder buf = Tessellator.getInstance().begin(VertexFormat.DrawMode.TRIANGLE_FAN, VertexFormats.POSITION_COLOR);
-        org.joml.Vector2f p = new org.joml.Vector2f();
-
         float cx = (float) ((x + x2) * 0.5);
         float cy = (float) ((y + y2) * 0.5);
         float tCenter = sideways ? (float) ((cx - x) / Math.max(1e-6, (x2 - x))) : (float) ((cy - y) / Math.max(1e-6, (y2 - y)));
         float[] cc = lerpColor(startColor, endColor, tCenter);
-        matrices.transformPosition(cx, cy, p);
-        buf.vertex(p.x, p.y, 0.0f).color(cc[0], cc[1], cc[2], cc[3]);
-
+        buf.vertex(cx, cy, 0.0f).color(cc[0], cc[1], cc[2], cc[3]);
         double[][] corners = new double[][]{
                 {x2 - radius, y2 - radius, radius},
                 {x2 - radius, y + radius,  radius},
@@ -320,19 +315,15 @@ public class Render2DUtil implements TextRendererAccessor {
                 float t = sideways ? (float) ((px - x) / Math.max(1e-6, (x2 - x))) : (float) ((py - y) / Math.max(1e-6, (y2 - y)));
                 float[] col = lerpColor(startColor, endColor, t);
                 if (!firstSet) { firstPx = px; firstPy = py; firstSet = true; }
-                matrices.transformPosition(px, py, p);
-                buf.vertex(p.x, p.y, 0.0f).color(col[0], col[1], col[2], col[3]);
+                buf.vertex(px, py, 0.0f).color(col[0], col[1], col[2], col[3]);
             }
         }
         {
             float t = sideways ? (float) ((firstPx - x) / Math.max(1e-6, (x2 - x))) : (float) ((firstPy - y) / Math.max(1e-6, (y2 - y)));
             float[] col = lerpColor(startColor, endColor, t);
-            matrices.transformPosition(firstPx, firstPy, p);
-            buf.vertex(p.x, p.y, 0.0f).color(col[0], col[1], col[2], col[3]);
+            buf.vertex(firstPx, firstPy, 0.0f).color(col[0], col[1], col[2], col[3]);
         }
-
-        BuiltBuffer built = buf.end();
-        Layers.getGlobalQuads().draw(built);
+        Layers.getGlobalTriangleFan().draw(buf.end());
     }
 
     public void drawGlow(DrawContext ctx, float x1, float y1, float x2, float y2, Color baseColor, float radius) {

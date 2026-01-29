@@ -37,7 +37,13 @@ public class Fonts implements ConfigurationAccessor {
 
     public void initializeFonts() throws IOException {
         fontRenderers.put("Minecraft", mc.textRenderer);
-        loadFontFromResource("Arial", "/assets/seq/arialmdm.ttf", 8.5f, 2.0f, TrueTypeFontLoader.Shift.NONE, "");
+        
+        // Try to load Arial font, but don't fail if it's missing or corrupted
+        try {
+            loadFontFromResource("Arial", "/assets/seq/arialmdm.ttf", 8.5f, 2.0f, TrueTypeFontLoader.Shift.NONE, "");
+        } catch (Exception e) {
+            LOGGER.warn("Failed to load bundled Arial font, continuing without it", e);
+        }
 
         File fontsDirectory = new File(configuration().configDirectory(), "fonts");
         if (!fontsDirectory.exists()) {
@@ -125,8 +131,8 @@ public class Fonts implements ConfigurationAccessor {
             TextRenderer textRenderer = new TextRenderer(provider);
             fontRenderers.put(fontKey, textRenderer);
             LOGGER.info("Loaded bundled font '{}' from resource {}", fontKey, resourcePath);
-        } catch (IOException e) {
-            LOGGER.warn("Failed to load font from resource {}", resourcePath, e);
+        } catch (Exception e) {
+            LOGGER.warn("Failed to load font from resource {} - {}", resourcePath, e.getMessage());
         }
     }
 

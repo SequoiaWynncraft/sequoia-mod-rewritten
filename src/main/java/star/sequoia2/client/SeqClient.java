@@ -187,13 +187,14 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
     public void onFinishedLoadingOnUI(MinecraftFinishedLoading ignored) {
         try {
             fonts.initializeFonts();
-            teXParser = new TeXParser();
-            profileFetcher = new SimpleProfileFetcher(); //init late so hopefully service is created
-            guildMessageParser = new GuildMessageParser();
-            guildRaidParser = new GuildRaidParser();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            LOGGER.warn("Failed to initialize fonts, continuing without custom fonts", e);
         }
+
+        teXParser = new TeXParser();
+        profileFetcher = new SimpleProfileFetcher(); //init late so hopefully service is created
+        guildMessageParser = new GuildMessageParser();
+        guildRaidParser = new GuildRaidParser();
     }
 
     private void registerFeatures() {

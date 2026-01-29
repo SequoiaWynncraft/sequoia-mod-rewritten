@@ -8,9 +8,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static star.sequoia2.utils.render.Pipelines.GLOBAL_LINES_PIPELINE;
 import static star.sequoia2.utils.render.Pipelines.GLOBAL_QUADS_PIPELINE;
+import static star.sequoia2.utils.render.Pipelines.GLOBAL_TRIANGLE_FAN_PIPELINE;
 
 public class Layers {
     private static final RenderLayer GLOBAL_QUADS;
+    private static final RenderLayer GLOBAL_TRIANGLE_FAN;
     private static final ConcurrentHashMap<Integer, RenderLayer> GLOBAL_LINES = new ConcurrentHashMap<>();
     private static final RenderLayer OUTLINE_SHADER_LAYER;
 
@@ -29,10 +31,22 @@ public class Layers {
         return GLOBAL_QUADS;
     }
 
+    public static RenderLayer getGlobalTriangleFan() {
+        return GLOBAL_TRIANGLE_FAN;
+    }
+
     static {
         GLOBAL_QUADS = RenderLayer.of(
                 "sequoia2_global_fill",
                 RenderSetup.builder(GLOBAL_QUADS_PIPELINE)
+                        .expectedBufferSize(256)
+                        .layeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
+                        .build()
+        );
+
+        GLOBAL_TRIANGLE_FAN = RenderLayer.of(
+                "sequoia2_global_triangle_fan",
+                RenderSetup.builder(GLOBAL_TRIANGLE_FAN_PIPELINE)
                         .expectedBufferSize(256)
                         .layeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
                         .build()
